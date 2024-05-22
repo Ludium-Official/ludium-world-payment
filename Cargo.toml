@@ -1,0 +1,46 @@
+[package]
+name = "ludium-payment"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+## async
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+# async-recursion = "1.1"
+
+## web
+axum = {version = "0.7", features = ["macros"]}
+axum-macros = "0.4.1"
+tower-http = { version = "0.5", features = ["fs", "trace"] }
+tower-cookies = "0.10"
+
+## json 
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_with = "3"
+
+## db 
+diesel = { version = "2.1", features = ["postgres", "uuid", "serde_json", "chrono"] }
+diesel_migrations = "2"
+deadpool-diesel = { version = "0.6.0", features = ["postgres"] }
+chrono = { version = "0.4.26", features = ["serde"] }
+
+## tracing 
+tracing = "0.1"
+tracing-subscriber =  "0.3"
+
+## swagger 
+utoipa = "4.2.3"
+utoipa-swagger-ui = { version = "7.0.1", features = ["axum"] }
+
+## Others
+lazy-regex = "3"
+dotenvy = "0.15"
+strum_macros = "0.26.2"
+uuid = {version = "1", features = ["v4","fast-rng"]}
+
+[dev-dependencies]
+anyhow = "1"
+httpc-test = "0.1"
+serial_test = "3"
