@@ -15,7 +15,6 @@ pub struct User {
     pub phn_nmb: String,
 }
 
-
 #[derive(Serialize)]
 pub struct UserResponse {
     id: String,
@@ -52,43 +51,3 @@ pub struct NewUserPayload {
 }
 
 // endregion: --- User Types
-
-// region:    --- UserBmc (usecase)
-
-pub struct UserBmc;
-
-impl UserBmc {
-    pub async fn insert(
-        db_manager: &dyn DbManager,
-        repo: &dyn UserRepository,
-        new_user_payload: NewUserPayload,
-    ) -> Result<User> {
-        let conn = db_manager.get_connection().await?;
-        repo.insert(conn, new_user_payload).await
-    }
-
-    pub async fn get(
-        db_manager: &dyn DbManager,
-        repo: &dyn UserRepository,
-        user_id: Uuid,
-    ) -> Result<User> {
-        let conn = db_manager.get_connection().await?;
-        repo.get(conn, user_id).await
-    }
-
-    pub async fn first_by_nick(
-        db_manager: &dyn DbManager,
-        repo: &dyn UserRepository,
-        user_nick: String,
-    ) -> Result<Option<User>> {
-        let conn = db_manager.get_connection().await?;
-        repo.first_by_nick(conn, user_nick).await
-    }
-
-    pub async fn list(db_manager: &dyn DbManager, repo: &dyn UserRepository) -> Result<Vec<User>> {
-        let conn = db_manager.get_connection().await?;
-        repo.list(conn).await
-    }
-}
-
-// endregion:    --- UserBmc (usecase)

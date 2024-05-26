@@ -4,7 +4,7 @@ mod adapter;
 mod port;
 mod domain;
 mod config;
-
+mod usecase;
 use std::sync::Arc;
 
 use adapter::{input::ctx::Ctx, output::persistence::db::postgres::{user_repository_impl::PostgresUserRepository, PostgresDbManager}};
@@ -14,44 +14,64 @@ use tokio::{net::TcpListener, sync::RwLock};
 use tower_cookies::CookieManagerLayer;
 use uuid::Uuid;
 use crate::{
-    adapter::{
-        input::{
+    adapter::input::{
             error::Error, 
-            response, 
             routes_static, 
-            web::{self, middleware::auth, routes_hello, routes_login}
-        }
+            web::{self, middleware::{auth, response}, routes_hello, routes_login}
         }, 
     config::{config, log::{self, log_request}}
 };
 pub use self::adapter::input::error::Result;
 
-// TODO: Improve this
-// pub type SharedState = Arc<AppState>;
+use near_fetch::signer::KeyRotatingSigner;
+use ::config::{Config, File as ConfigFile};
+use once_cell::sync::Lazy;
+use near_crypto::InMemorySigner;
+
+// load config from toml and setup jsonrpc client
+static LOCAL_CONF: Lazy<Config> = Lazy::new(|| {
+    Config::builder()
+        .add_source(ConfigFile::with_name("config.toml"))
+        .build()
+        .unwrap()
+});
+static ROTATING_SIGNER: Lazy<KeyRotatingSigner> = Lazy::new(|| {
+    let path = LOCAL_CONF
+        .get::<String>("keys_filename")
+        .expect("Failed to read 'keys_filename' from config");
+    let keys_file = std::fs::File::open(path).expect("Failed to open keys file");
+    let signers: Vec<InMemorySigner> =
+        serde_json::from_reader(keys_file).expect("Failed to parse keys file");
+
+    KeyRotatingSigner::from_signers(signers)
+});
+
 
 #[derive(Clone)]
 struct AppState {
     db_manager: PostgresDbManager,
     user_repo: PostgresUserRepository,
+    near_rpc_client: Arc<near_fetch::Client>
 }
 
 #[tokio::main]
 async fn main() -> Result<()>{
     log::init_tracing();
-    // let state = SharedState::default();
     let config = config().await;
 
     println!("Hello, world!, {}", config.db_url().to_string());
 
     let db_manager = PostgresDbManager::new(&config.db_url()).await?;
     let user_repo = PostgresUserRepository;
+    let near_rpc_client = Arc::new(config.near_network_config.rpc_client());
 
-    let app_state = AppState {
+    let app_state = Arc::new(AppState {
         db_manager: db_manager,
         user_repo,
-    };
+        near_rpc_client
+    });
 
-    let routes_apis = web::routes_user::routes(app_state.clone())
+    let routes_apis = web::routes_user::routes(Arc::clone(&app_state))
         .route_layer(middleware::from_fn(auth::mw_require_auth));
     
     // TODO: Add a middleware to resolve the context
@@ -63,7 +83,7 @@ async fn main() -> Result<()>{
         .nest("/api", routes_apis)
         .layer(middleware::map_response(response::mapper))
         .layer(middleware::from_fn_with_state(
-            app_state.clone(),
+            Arc::clone(&app_state),
             auth::mw_ctx_resolver,
         ))
         .layer(Extension(ctx)) 

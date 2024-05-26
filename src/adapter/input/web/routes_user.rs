@@ -1,25 +1,27 @@
 //! DELETE_ME: Test only 
 
+use std::sync::Arc;
+
 use crate::adapter::input::ctx::{self, Ctx};
 
 use crate::adapter::input::error::{Result, Error};
-use crate::domain::model::user::{NewUserPayload, User, UserBmc, UserResponse};
+use crate::domain::model::user::{NewUserPayload, User, UserResponse};
 use crate::port::output::{DbManager, UserRepository};
 use crate::AppState;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 
-pub fn routes(state: AppState) -> Router {
+pub fn routes(state: Arc<AppState>) -> Router {
 	Router::new()
 		.route("/users", get(list_users).post(create_user))
 		.route("/users/:nickname", get(get_user_by_nickname))
-		.with_state(state)
+		.with_state(Arc::clone(&state))
 }
 
 // region:    --- REST Handlers
 async fn create_user(
-	State(state): State<AppState>,
+	State(state): State<Arc<AppState>>,
 	Extension(ctx): Extension<Ctx>,
 	Json(new_user_payload): Json<NewUserPayload>,
 ) -> Result<Json<UserResponse>> {
@@ -34,7 +36,7 @@ async fn create_user(
 }
 
 async fn list_users(
-	State(state): State<AppState>,
+	State(state): State<Arc<AppState>>,
 	Extension(ctx): Extension<Ctx>,
 ) -> Result<Json<Vec<UserResponse>>> {
 	tracing::debug!("[handler] list_users");
@@ -49,7 +51,7 @@ async fn list_users(
 }
 
 async fn get_user_by_nickname(
-	State(state): State<AppState>,
+	State(state): State<Arc<AppState>>,
 	Extension(ctx): Extension<Ctx>,
 	Path(nickname): Path<String>,
 ) -> Result<Json<UserResponse>> {

@@ -3,8 +3,8 @@ use serde_json::json;
 use uuid::Uuid;
 use tower_http::services::ServeDir;
 
-use crate::{adapter::input::error::Error, config::log::log_request};
-use super::ctx::Ctx;
+use crate::{adapter::input::{ctx::Ctx, error::Error}, config::log::log_request};
+
 
 pub async fn mapper(
 	ctx: Option<Ctx>,

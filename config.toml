@@ -1,0 +1,13 @@
+# No Filters config
+# This is a config for a relayer that covers gas for a whitelisted set of users' transactions with no filters
+# To prevent abuse, this should only be used if there's only a secure backend calling the relayer
+
+# Please note this is for reference only and you should be updating the values in the `config.toml` file found in the `pagoda-relayer-rs` directory.
+
+# replace with the account id of the public key you will use to sign relay transactions - this should match the account_id in your json file
+relayer_account_id = "nomnomnom.testnet"
+# this is a list of jsons from json key files containing 3 entries: account_id, public_key, secret_key
+# NOTE: If you copy/paste the json from the key files, you might need to change private_key to secret_key
+# NOTE: account_id for all keys used should match as they should be derived from the same account_id
+# this is recommended for high throughput use cases to prevent nonce race conditions
+keys_filename = "./account_keys/nomnomnom.testnet.json"

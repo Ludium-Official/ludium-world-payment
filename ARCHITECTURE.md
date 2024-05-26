@@ -24,7 +24,7 @@ pub enum PaymentStatus {
 ```
 
 ### Usecase
-Usecase 계층은 Domain이 수행할 수 있는 작업을 추상화한다. Domain 및 외부 레이어(Adapter, Port)와의 데이터 흐름을 조정한다. 현재 해당 프로젝트는 Record 패턴을 따르며 Domain 클래스에 부분 생략되어 포함되어 있다.
+Usecase 계층은 Domain이 수행할 수 있는 작업을 추상화한다. Domain 및 외부 레이어(Adapter, Port)와의 데이터 흐름을 조정한다. 
 
 ```rust 
 // Example of a Usecase in Rust

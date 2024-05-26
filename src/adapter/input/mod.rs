@@ -8,7 +8,6 @@ use crate::config::log::log_request;
 pub mod web;
 pub mod ctx;
 pub mod error;
-pub mod response;
 
 pub use self::error::{Result, Error};
 

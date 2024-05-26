@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::adapter::input::ctx::Ctx;
 use crate::web::AUTH_TOKEN;
 use crate::AppState;
@@ -26,7 +28,7 @@ pub async fn mw_require_auth(
 }
 
 pub async fn mw_ctx_resolver(
-	_state: State<AppState>,
+	_state: State<Arc<AppState>>,
 	cookies: Cookies,
 	mut req: Request<Body>,
 	next: Next,

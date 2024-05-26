@@ -1,6 +1,7 @@
 mod error;
 
 pub mod user;
+pub mod near;
 
 use std::sync::Arc;
 

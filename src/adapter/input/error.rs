@@ -23,6 +23,9 @@ pub enum Error {
 
 	// -- Domain
 	Model(model::Error),
+
+	// - Payment
+	PaymentFail,
 }
 
 // region:    --- Error Boilerplate

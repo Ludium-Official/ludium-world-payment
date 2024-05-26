@@ -35,3 +35,14 @@ async fn quick_dev() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn quick_dev2() -> Result<()> {
+    let hc = httpc_test::new_client("http://localhost:8090")?;
+
+    hc.do_get("/hello").await?.print().await?;
+
+    hc.do_get("/payment").await?.print().await?;
+
+    Ok(())
+}

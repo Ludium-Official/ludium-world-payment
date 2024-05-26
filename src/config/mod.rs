@@ -1,10 +1,12 @@
 pub mod log; 
+mod near;
 
 use std::env;
 use dotenvy::dotenv;
 use tokio::sync::OnceCell;
 
 use crate::adapter::output::persistence::db::_dev_utils;
+use self::near::NearNetworkConfig;
 
 #[derive(Debug)]
 struct ServerConfig {
@@ -21,6 +23,7 @@ struct DatabaseConfig {
 pub struct Config {
     server: ServerConfig,
     db: DatabaseConfig,
+    pub(crate) near_network_config: NearNetworkConfig
 }
 
 impl Config {
@@ -61,6 +64,11 @@ async fn init_config() -> Config {
         url: env::var(databse_url_key).expect("DATABASE_URL must be set"),
     };
 
+    let near_network_config = NearNetworkConfig {
+        rpc_url: url::Url::parse(&env::var("NEAR_RPC_URL").expect("RPC_URL must be set")).unwrap(),
+        rpc_api_key: env::var("NEAR_RPC_API_KEY").ok().map(|key| key.parse().unwrap()),
+    };
+
     if run_mode == "development" {
         // NOTE: Hardcode to prevent deployed system db update.
         let admin_database_url = "postgres://postgres:postgres@localhost:5432/postgres";
@@ -70,6 +78,7 @@ async fn init_config() -> Config {
     Config {
         server: server_config,
         db: database_config,
+        near_network_config: near_network_config
     }
 }
 

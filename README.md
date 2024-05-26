@@ -6,10 +6,10 @@ ludium payment axum backend system.
 ## Local Execution
 ### quick dev
 ```
-# test
+# run server with hotreload
 cargo watch -q -c -w src/ -x run 
 
-# test with debug
+# run quickdev with hotreload
 cargo watch -q -c -w tests/ -x  "test -q quick_dev -- --nocapture"
 ```
 
