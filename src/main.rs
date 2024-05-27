@@ -14,11 +14,11 @@ use tokio::{net::TcpListener, sync::RwLock};
 use tower_cookies::CookieManagerLayer;
 use uuid::Uuid;
 use crate::{
-    adapter::input::{
+    adapter::{input::{
             error::Error, 
             routes_static, 
             web::{self, middleware::{auth, response}, routes_hello, routes_login}
-        }, 
+        }, output::persistence::db::postgres::{coin_network_repository_impl::PostgresCoinNetworkRepository, coin_repository_impl::PostgresCoinRepository, network_repository_impl::PostgresNetworkRepository}}, 
     config::{config, log::{self, log_request}}
 };
 pub use self::adapter::input::error::Result;
@@ -46,11 +46,13 @@ static ROTATING_SIGNER: Lazy<KeyRotatingSigner> = Lazy::new(|| {
     KeyRotatingSigner::from_signers(signers)
 });
 
-
 #[derive(Clone)]
 struct AppState {
     db_manager: PostgresDbManager,
     user_repo: PostgresUserRepository,
+    coin_repo: PostgresCoinRepository,
+    network_repo: PostgresNetworkRepository,
+    coin_network_repo: PostgresCoinNetworkRepository,
     near_rpc_client: Arc<near_fetch::Client>
 }
 
@@ -63,15 +65,23 @@ async fn main() -> Result<()>{
 
     let db_manager = PostgresDbManager::new(&config.db_url()).await?;
     let user_repo = PostgresUserRepository;
+    let coin_repo = PostgresCoinRepository;
+    let network_repo = PostgresNetworkRepository;
+    let coin_network_repo = PostgresCoinNetworkRepository;
     let near_rpc_client = Arc::new(config.near_network_config.rpc_client());
 
     let app_state = Arc::new(AppState {
-        db_manager: db_manager,
+        db_manager,
         user_repo,
+        coin_repo,
+        network_repo,
+        coin_network_repo,
         near_rpc_client
     });
 
     let routes_apis = web::routes_user::routes(Arc::clone(&app_state))
+        .merge(web::routes_coin::routes(Arc::clone(&app_state)))
+        .merge(web::routes_network::routes(Arc::clone(&app_state)))
         .route_layer(middleware::from_fn(auth::mw_require_auth));
     
     // TODO: Add a middleware to resolve the context

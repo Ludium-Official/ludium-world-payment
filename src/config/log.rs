@@ -25,6 +25,7 @@ pub fn init_tracing() {
     let tracing_layer = tracing_subscriber::fmt::layer();
 
     let filter = filter::Targets::new()
+		.with_target("diesel", tracing::Level::DEBUG) 
         .with_target("tower_http::trace::on_response", Level::DEBUG)
         .with_target("tower_http::trace::on_request", Level::DEBUG)
         .with_target("tower_http::trace::make_span", Level::DEBUG)

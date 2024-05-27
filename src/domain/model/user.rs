@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::{adapter::output::persistence::db::{error::adapt_db_error, schema::tb_ldm_usr}, domain::model::{Error,Result}, port::output::{DbManager, UserRepository}};
 
-// region:    --- User Types
-
 #[derive(Clone, Debug, Queryable, Identifiable)]
 #[diesel(table_name = tb_ldm_usr)]
 pub struct User {
@@ -49,5 +47,3 @@ pub struct NewUserPayload {
     pub self_intro: String,
     pub phn_nmb: String,
 }
-
-// endregion: --- User Types

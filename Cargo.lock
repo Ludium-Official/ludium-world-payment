@@ -1446,6 +1446,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "diesel-derive-enum"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81c5131a2895ef64741dad1d483f358c2a229a3a2d1b256778cdc5e146db64d4"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.65",
+]
+
+[[package]]
 name = "diesel_derives"
 version = "2.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2780,6 +2792,7 @@ dependencies = [
  "config",
  "deadpool-diesel",
  "diesel",
+ "diesel-derive-enum",
  "diesel_migrations",
  "dotenvy",
  "httpc-test",
@@ -6749,6 +6762,7 @@ checksum = "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0"
 dependencies = [
  "getrandom 0.2.15",
  "rand 0.8.5",
+ "serde",
 ]
 
 [[package]]

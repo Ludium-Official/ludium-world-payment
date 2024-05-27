@@ -154,10 +154,14 @@ async fn filter_and_send_signed_delegate_action(
 
 // endregion: --- REST Handlers
 
-
+// region: --- meta_tx real test
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapter::output::persistence::db::_dev_utils;
+    use crate::adapter::output::persistence::db::postgres::coin_network_repository_impl::PostgresCoinNetworkRepository;
+    use crate::adapter::output::persistence::db::postgres::coin_repository_impl::PostgresCoinRepository;
+    use crate::adapter::output::persistence::db::postgres::network_repository_impl::PostgresNetworkRepository;
     use crate::adapter::output::persistence::db::postgres::{user_repository_impl::PostgresUserRepository, PostgresDbManager};
     use crate::config::config;
 
@@ -184,13 +188,19 @@ mod tests {
     async fn create_app_state() -> AppState {
         let config = config().await;
 
-        let db_manager = PostgresDbManager::new(&config.db_url()).await.unwrap();
+        let db_manager = _dev_utils::init_test().await;
         let user_repo = PostgresUserRepository;
+        let coin_repo = PostgresCoinRepository;
+        let network_repo = PostgresNetworkRepository;
+        let coin_network_repo = PostgresCoinNetworkRepository;
         let near_rpc_client = Arc::new(config.near_network_config.rpc_client());
         
         AppState {
             db_manager,
             user_repo,
+            coin_repo,
+            network_repo,
+            coin_network_repo,
             near_rpc_client
         }
     }
@@ -248,6 +258,7 @@ mod tests {
     }
 
 
+    #[ignore]
     #[tokio::test]
     async fn test_relay() {
         let app_state = create_app_state().await;
@@ -318,7 +329,7 @@ mod tests {
         }
     }
 
-
+    #[ignore]
     #[tokio::test]
     async fn test_usdc_transfer()  {
         let app_state = create_app_state().await;
@@ -367,3 +378,5 @@ mod tests {
         println!("Response: {response:?}");
     }
 }
+
+// endregion: --- meta_tx real test

@@ -2,6 +2,9 @@ mod error;
 
 pub mod user;
 pub mod near;
+pub mod coin;
+pub mod coin_network;
+pub mod network;
 
 use std::sync::Arc;
 

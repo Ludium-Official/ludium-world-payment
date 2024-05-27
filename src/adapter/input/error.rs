@@ -10,6 +10,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Clone, Debug, Serialize, strum_macros::AsRefStr)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
+	InputInvalid { field: String, message: String },
+	
 	// -- Mock Login Errors.
     LoginFail,
 
@@ -45,10 +47,8 @@ impl IntoResponse for Error {
 	fn into_response(self) -> Response {
 		tracing::debug!("[into_response] - {self:?}");
 
-		// Create a placeholder Axum reponse.
 		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 
-		// Insert the Error into the reponse.
 		response.extensions_mut().insert(self);
 
 		response

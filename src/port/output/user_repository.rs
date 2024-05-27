@@ -9,7 +9,7 @@ pub trait UserRepository {
     //! test only 
     async fn insert(&self, conn: Object, new_user_payload: NewUserPayload) -> Result<User>;
 
-    // use case
+    // usecase
     async fn get(&self, conn: Object, user_id: Uuid) -> Result<User>;
     async fn first_by_nick(&self, conn: Object, user_nick: String) -> Result<Option<User>>;
     async fn list(&self, conn: Object) -> Result<Vec<User>>;
