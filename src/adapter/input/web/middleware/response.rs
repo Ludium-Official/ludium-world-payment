@@ -1,4 +1,4 @@
-use axum::{http::{Method, Uri}, response::{IntoResponse, Response}, routing::get_service, Json, Router};
+use axum::{http::{Method, StatusCode, Uri}, response::{IntoResponse, Response}, routing::get_service, Json, Router};
 use serde_json::json;
 use uuid::Uuid;
 use tower_http::services::ServeDir;

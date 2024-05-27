@@ -3,6 +3,8 @@ use deadpool_diesel::InteractError;
 use serde::Serialize;
 use serde_with::serde_as;
 
+use crate::domain::model;
+
 #[serde_as]
 #[derive(Debug, Serialize, Clone)]
 pub enum DbError {
@@ -10,6 +12,7 @@ pub enum DbError {
     QueryError(String),
     PoolError(String),
     BuildError(String),
+
 }
 
 pub fn adapt_db_error<T: Error>(error: T) -> DbError {

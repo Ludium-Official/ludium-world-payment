@@ -2,7 +2,7 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::domain::model::{coin_network::{CoinNetwork, NewCoinNetwork, NewCoinNetworkPayload}, Error, Result};
+use crate::{adapter::output::persistence::db::schema::{coin, network}, domain::model::{coin::Coin, coin_network::{CoinNetwork, NewCoinNetwork, NewCoinNetworkPayload}, network::Network, Error, Result}};
 use crate::port::output::coin_network_repository::CoinNetworkRepository;
 use super::{adapt_db_error, coin_network};
 
@@ -38,6 +38,41 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
         .await
         .map_err(|e| Error::from(adapt_db_error(e)))?
         .map_err(|e| Error::from(adapt_db_error(e)))
+    }
+
+    async fn get_with_coin_and_network(&self, conn: Object, coin_network_id: Uuid) -> Result<(CoinNetwork, Coin, Network)> {
+        let result = conn.interact(move |conn| {
+            coin_network::table
+                .inner_join(coin::table.on(coin_network::coin_id.eq(coin::id)))
+                .inner_join(network::table.on(coin_network::network_id.eq(network::id)))
+                .filter(coin_network::id.eq(coin_network_id))
+                .select((coin_network::all_columns, coin::all_columns, network::all_columns))
+                .first::<(CoinNetwork, Coin, Network)>(conn)
+                .map_err(adapt_db_error)
+        })
+        .await
+        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .map_err(|e| Error::from(e));
+
+        Ok(result.map_err(|e| Error::from(e))?)
+    }
+
+    async fn get_with_coins_and_networks(&self, conn: Object, coin_network_ids: Vec<Uuid>) -> Result<Vec<(CoinNetwork, Coin, Network)>> {
+        let result = conn.interact(move |conn| {
+            coin_network::table
+                .inner_join(coin::table.on(coin_network::coin_id.eq(coin::id)))
+                .inner_join(network::table.on(coin_network::network_id.eq(network::id)))
+                .filter(coin_network::id.eq_any(coin_network_ids))
+                .select((coin_network::all_columns, coin::all_columns, network::all_columns))
+                .load::<(CoinNetwork, Coin, Network)>(conn)
+                .map_err(adapt_db_error)
+        })
+        .await
+        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .map_err(|e| Error::from(e));
+
+        // result.map_err(adapt_db_error)
+        Ok(result.map_err(|e| Error::from(e))?)
     }
 
     async fn list_by_coin_id(&self, conn: Object, coin_id: Uuid) -> Result<Vec<CoinNetwork>> {

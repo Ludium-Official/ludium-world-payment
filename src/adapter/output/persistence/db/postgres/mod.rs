@@ -7,11 +7,12 @@ use crate::domain::model::user::{User, NewUser};
 use crate::port::output::{UserRepository, DbManager};
 
 use super::error::adapt_db_error;
-use super::schema::{tb_ldm_usr, coin, network, coin_network};
+use super::schema::{tb_ldm_usr, coin, network, coin_network, reward_claim};
 pub mod user_repository_impl;
 pub mod coin_repository_impl;
 pub mod network_repository_impl;
 pub mod coin_network_repository_impl;
+pub mod reward_claim_repository_impl;
 
 #[derive(Clone)]
 pub struct PostgresDbManager {

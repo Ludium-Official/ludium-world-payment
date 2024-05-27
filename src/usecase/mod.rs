@@ -1,9 +1,7 @@
 use axum::http::StatusCode;
-
+pub mod utrait;
 pub mod process_meta_tx;
-
-
-
+pub mod reward_claim_usecase_impl;
 
 #[derive(Debug)]
 pub struct RelayError {
@@ -21,8 +19,3 @@ impl std::fmt::Display for RelayError {
 impl std::error::Error for RelayError {}
 
 
-// impl From<RelayError> for Error {
-//     fn from(error: RelayError) -> Self {
-//         Self::RelayError(error)
-//     }
-// }

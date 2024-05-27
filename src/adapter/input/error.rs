@@ -1,8 +1,8 @@
-use axum::{http::StatusCode, response::{IntoResponse, Response}};
+use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
 use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::domain::model;
+use crate::{adapter::output::persistence::db, domain::model};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -22,12 +22,21 @@ pub enum Error {
 
 	// -- Model Errors.
 	UserNicknameNotFound { nickname: String },
+	CoinNetworkIdNotFound { id: String },
+	RewardClaimDuplicate { mission_id: String, user_id: String },
 
 	// -- Domain
 	Model(model::Error),
 
-	// - Payment
+	// -- Database
+	NotFound,
+    DatabaseError(db::DbError),
+
+	// -- Payment
 	PaymentFail,
+
+	// -- Deserialization
+	DeserializationError { message: String },
 }
 
 // region:    --- Error Boilerplate
@@ -43,15 +52,29 @@ impl core::fmt::Display for Error {
 impl std::error::Error for Error {}
 // endregion: --- Error Boilerplate
 
+#[derive(Serialize)]
+struct ErrorResponse {
+    error: String,
+    message: String,
+}
+
 impl IntoResponse for Error {
 	fn into_response(self) -> Response {
 		tracing::debug!("[into_response] - {self:?}");
 
-		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
+		// let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 
-		response.extensions_mut().insert(self);
+		// response.extensions_mut().insert(self);
 
-		response
+		// response
+
+		let (status, client_error) = self.client_status_and_error();
+        let error_response = ErrorResponse {
+            error: client_error.as_ref().to_string(),
+            message: self.to_string(),
+        };
+
+        (status, Json(error_response)).into_response()
 	}
 }
 
@@ -69,9 +92,15 @@ impl Error {
 			}
 
 			// -- Model.
-			Self::UserNicknameNotFound { .. } => {
+			Self::UserNicknameNotFound { .. }
+			| Self::CoinNetworkIdNotFound { .. } => {
 				(StatusCode::BAD_REQUEST, ClientError::INVALID_PARAMS)
 			}
+
+			 // -- Deserialization.
+			Self::DeserializationError { .. } => {
+                (StatusCode::UNPROCESSABLE_ENTITY, ClientError::INVALID_PARAMS)
+            }
 
 			// -- Fallback.
 			_ => (

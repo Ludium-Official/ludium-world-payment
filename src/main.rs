@@ -18,8 +18,8 @@ use crate::{
             error::Error, 
             routes_static, 
             web::{self, middleware::{auth, response}, routes_hello, routes_login}
-        }, output::persistence::db::postgres::{coin_network_repository_impl::PostgresCoinNetworkRepository, coin_repository_impl::PostgresCoinRepository, network_repository_impl::PostgresNetworkRepository}}, 
-    config::{config, log::{self, log_request}}
+        }, output::persistence::db::postgres::{coin_network_repository_impl::PostgresCoinNetworkRepository, coin_repository_impl::PostgresCoinRepository, network_repository_impl::PostgresNetworkRepository, reward_claim_repository_impl::PostgresRewardClaimRepository}}, 
+    config::{config, log::{self, log_request}}, usecase::{reward_claim_usecase_impl::RewardClaimUsecaseImpl, utrait::reward_claim_usecase::RewardClaimUsecase}
 };
 pub use self::adapter::input::error::Result;
 
@@ -28,13 +28,14 @@ use ::config::{Config, File as ConfigFile};
 use once_cell::sync::Lazy;
 use near_crypto::InMemorySigner;
 
-// load config from toml and setup jsonrpc client
+// region: --- near signer setup
 static LOCAL_CONF: Lazy<Config> = Lazy::new(|| {
     Config::builder()
         .add_source(ConfigFile::with_name("config.toml"))
         .build()
         .unwrap()
 });
+
 static ROTATING_SIGNER: Lazy<KeyRotatingSigner> = Lazy::new(|| {
     let path = LOCAL_CONF
         .get::<String>("keys_filename")
@@ -45,15 +46,18 @@ static ROTATING_SIGNER: Lazy<KeyRotatingSigner> = Lazy::new(|| {
 
     KeyRotatingSigner::from_signers(signers)
 });
+// endregion
 
 #[derive(Clone)]
 struct AppState {
-    db_manager: PostgresDbManager,
-    user_repo: PostgresUserRepository,
-    coin_repo: PostgresCoinRepository,
-    network_repo: PostgresNetworkRepository,
-    coin_network_repo: PostgresCoinNetworkRepository,
-    near_rpc_client: Arc<near_fetch::Client>
+    db_manager: Arc<PostgresDbManager>,
+    user_repo: Arc<PostgresUserRepository>,
+    coin_repo: Arc<PostgresCoinRepository>,
+    network_repo: Arc<PostgresNetworkRepository>,
+    coin_network_repo: Arc<PostgresCoinNetworkRepository>,
+    reward_claim_repo: Arc<PostgresRewardClaimRepository>,
+    reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync>,
+    near_rpc_client: Arc<near_fetch::Client>,
 }
 
 #[tokio::main]
@@ -63,25 +67,34 @@ async fn main() -> Result<()>{
 
     println!("Hello, world!, {}", config.db_url().to_string());
 
-    let db_manager = PostgresDbManager::new(&config.db_url()).await?;
-    let user_repo = PostgresUserRepository;
-    let coin_repo = PostgresCoinRepository;
-    let network_repo = PostgresNetworkRepository;
-    let coin_network_repo = PostgresCoinNetworkRepository;
+    let db_manager = Arc::new(PostgresDbManager::new(&config.db_url()).await?);
+    let user_repo = Arc::new(PostgresUserRepository);
+    let coin_repo = Arc::new(PostgresCoinRepository);
+    let network_repo = Arc::new(PostgresNetworkRepository);
+    let coin_network_repo = Arc::new(PostgresCoinNetworkRepository);
+    let reward_claim_repo = Arc::new(PostgresRewardClaimRepository);
     let near_rpc_client = Arc::new(config.near_network_config.rpc_client());
+    let reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync> = Arc::new(RewardClaimUsecaseImpl::new(
+        Arc::clone(&db_manager),
+        Arc::clone(&reward_claim_repo),
+        Arc::clone(&coin_network_repo),
+    ));
 
     let app_state = Arc::new(AppState {
-        db_manager,
-        user_repo,
-        coin_repo,
-        network_repo,
-        coin_network_repo,
-        near_rpc_client
+        db_manager: Arc::clone(&db_manager),
+        user_repo: Arc::clone(&user_repo),
+        coin_repo: Arc::clone(&coin_repo),
+        network_repo: Arc::clone(&network_repo),
+        coin_network_repo: Arc::clone(&coin_network_repo),
+        reward_claim_repo: Arc::clone(&reward_claim_repo),
+        reward_claim_usecase: Arc::clone(&reward_claim_usecase),
+        near_rpc_client: Arc::clone(&near_rpc_client),
     });
 
     let routes_apis = web::routes_user::routes(Arc::clone(&app_state))
         .merge(web::routes_coin::routes(Arc::clone(&app_state)))
         .merge(web::routes_network::routes(Arc::clone(&app_state)))
+        .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))
         .route_layer(middleware::from_fn(auth::mw_require_auth));
     
     // TODO: Add a middleware to resolve the context

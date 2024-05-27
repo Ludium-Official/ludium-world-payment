@@ -1,15 +1,17 @@
+use chrono::NaiveDateTime;
 use diesel::sql_types::Text;
 use diesel_derive_enum::DbEnum;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::adapter::output::persistence::db::schema::{coin, coin_network, network};
+use super::TimestampTrait;
 
 #[derive(Clone, Debug, Serialize, Deserialize, DbEnum)]
 #[ExistingTypePath = "crate::adapter::output::persistence::db::schema::sql_types::CoinType"]
 pub enum CoinType {
     #[db_rename = "NATIVE"]
-    NATIVE,
+    Native,
     #[db_rename = "FT"]
     FT,
     #[db_rename = "NFT"]
@@ -19,10 +21,10 @@ pub enum CoinType {
 impl From<String> for CoinType {
     fn from(coin_type: String) -> Self {
         match coin_type.to_uppercase().as_str() {
-            "NATIVE" => CoinType::NATIVE,
+            "NATIVE" => CoinType::Native,
             "FT" => CoinType::FT,
             "NFT" => CoinType::NFT,
-            _ => CoinType::NATIVE,
+            _ => CoinType::Native,
         }
     }
 }
@@ -44,6 +46,18 @@ pub struct Coin {
     pub name: String,
     pub symbol: String,
     pub coin_type: CoinType,
+    pub created_date: NaiveDateTime,
+    pub updated_date: NaiveDateTime,
+}
+
+impl TimestampTrait for Coin {
+    fn created_date(&self) -> NaiveDateTime {
+        self.created_date
+    }
+
+    fn updated_date(&self) -> NaiveDateTime {
+        self.updated_date
+    }
 }
 
 #[derive(Insertable, Debug, Clone)]
@@ -68,6 +82,8 @@ pub struct CoinResponse {
     pub name: String,
     pub symbol: String,
     pub coin_type: CoinType,
+    pub created_date: NaiveDateTime,
+    pub updated_date: NaiveDateTime,
 }
 
 impl From<Coin> for CoinResponse {
@@ -77,6 +93,8 @@ impl From<Coin> for CoinResponse {
             name: coin.name,
             symbol: coin.symbol,
             coin_type: coin.coin_type,
+            created_date: coin.created_date,
+            updated_date: coin.updated_date,
         }
     }
 }

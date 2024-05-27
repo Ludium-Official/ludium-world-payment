@@ -1,6 +1,7 @@
-# Ludium Payment System
+# Ludium Reward Payment System
 ## About
-ludium payment axum backend system.
+ludium reward payment axum backend in off-chain, relayer in on-chain system. 
+- project structre: check the ARCHITECTURE.md 
 
 
 ## Local Execution
