@@ -3,3 +3,5 @@
 !.env.example
 .vscode
 /account_keys
+
+/tests/data/*

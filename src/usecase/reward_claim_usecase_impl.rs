@@ -1,39 +1,54 @@
 use std::{collections::HashMap, sync::Arc};
 use async_trait::async_trait;
+use near_primitives::views::FinalExecutionStatus;
 use uuid::Uuid;
-use crate::{domain::model::{coin::Coin, coin_network::CoinNetwork, network::Network, reward_claim::{NewRewardClaimPayload, RewardClaim, RewardClaimResponse, RewardClaimStatus}}, port::output::{coin_network_repository::CoinNetworkRepository, reward_claim_repository::RewardClaimRepository, DbManager}};
+use crate::{
+    adapter::output::near::NearRpcManager, usecase::near_usecase_impl,
+    domain::model::{
+        coin::Coin, coin_network::CoinNetwork, network::Network, reward_claim_detail::NewRewardClaimDetail,
+        reward_claim::{
+            CombinedRewardClaimResponse, NewRewardClaimPayload, RewardClaim, RewardClaimApprovePayload, RewardClaimApproveResponse, RewardClaimResponse, RewardClaimStatus
+        },
+    }, 
+    port::output::{
+        coin_network_repository::CoinNetworkRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager
+    }};
 use crate::adapter::input::error::{Result, Error};
-use super::utrait::reward_claim_usecase::RewardClaimUsecase;
+use super::utrait::{near_usecase::NearUsecase, reward_claim_usecase::RewardClaimUsecase};
 
-pub struct RewardClaimUsecaseImpl<D: DbManager, R: RewardClaimRepository, C: CoinNetworkRepository> {
+pub struct RewardClaimUsecaseImpl<D: DbManager, R: RewardClaimRepository, C: CoinNetworkRepository, N: RpcClient> {
     db_manager: Arc<D>,
     reward_claim_repo: Arc<R>,
     coin_network_repo: Arc<C>,
+    near_rpc_manager: Arc<N>,
 }
 
-impl<D, R, C> RewardClaimUsecaseImpl<D, R, C>
+impl<D, R, C, N> RewardClaimUsecaseImpl<D, R, C, N>
 where
     D: DbManager + Send + Sync,
     R: RewardClaimRepository + Send + Sync,
     C: CoinNetworkRepository + Send + Sync,
+    N: RpcClient + Send + Sync + 'static,
 {
-    pub fn new(db_manger: Arc<D>, reward_claim_repo: Arc<R>, coin_network_repo: Arc<C>) -> Self {
+    pub fn new(db_manger: Arc<D>, reward_claim_repo: Arc<R>, coin_network_repo: Arc<C>, near_rpc_manager: Arc<N>) -> Self {
         Self {
             db_manager: db_manger,
             reward_claim_repo,
             coin_network_repo,
+            near_rpc_manager,
         }
     }
 }
 
 #[async_trait]
-impl<D, R, C> RewardClaimUsecase for RewardClaimUsecaseImpl<D, R, C>
+impl<D, R, C, N> RewardClaimUsecase for RewardClaimUsecaseImpl<D, R, C, N>
 where 
     D: DbManager + Send + Sync,
     R: RewardClaimRepository + Send + Sync,
     C: CoinNetworkRepository + Send + Sync,
+    N: RpcClient + Send + Sync + 'static,
 {
-    async fn create_reward_claim(&self, payload: NewRewardClaimPayload) -> Result<RewardClaimResponse> {
+    async fn create_reward_claim(&self, payload: NewRewardClaimPayload) -> Result<CombinedRewardClaimResponse> {
         let db_manger = &self.db_manager;
         
         let (coin_network, coin, network) = self.coin_network_repo
@@ -49,10 +64,10 @@ where
         }
 
         let reward_claim = self.reward_claim_repo.insert(db_manger.get_connection().await?.into(), payload).await?;
-        Ok(RewardClaimResponse::from((reward_claim, coin_network, coin, network)))
+        Ok(CombinedRewardClaimResponse::from((reward_claim, coin_network, coin, network)))
     }
 
-    async fn create_multiple_reward_claims(&self, payloads: Vec<NewRewardClaimPayload>) -> Result<Vec<RewardClaimResponse>> {
+    async fn create_multiple_reward_claims(&self, payloads: Vec<NewRewardClaimPayload>) -> Result<Vec<CombinedRewardClaimResponse>> {
         let db_manager = &self.db_manager;
 
         let coin_network_ids: Vec<Uuid> = payloads.iter().map(|p| p.coin_network_id).collect();
@@ -72,10 +87,70 @@ where
             }
 
             let reward_claim = self.reward_claim_repo.insert(db_manager.get_connection().await?.into(), payload).await?;
-            responses.push(RewardClaimResponse::from((reward_claim, coin_network.clone(), coin.clone(), network.clone())));
+            responses.push(CombinedRewardClaimResponse::from((reward_claim, coin_network.clone(), coin.clone(), network.clone())));
         }
 
         Ok(responses)
+    }
 
+    async fn reject_reward_claim(&self, claim_id: Uuid) -> Result<RewardClaimResponse> {
+        let db_manager = &self.db_manager;
+        
+        let reward_claim = self.reward_claim_repo.get(db_manager.get_connection().await?.into(), claim_id).await?;
+        if !reward_claim.reward_claim_status.eq(&RewardClaimStatus::Ready) {
+            return Err(Error::InvalidClaimStatusForReject);
+        }
+
+        let updated_claim = self.reward_claim_repo.update_status(db_manager.get_connection().await?.into(), claim_id, RewardClaimStatus::Rejected).await?;
+
+        Ok(RewardClaimResponse::from(updated_claim))
+    }
+
+    async fn approve_reward_claim(&self, claim_id: Uuid, payload: RewardClaimApprovePayload) -> Result<RewardClaimApproveResponse> {
+        let db_manager = &self.db_manager;
+        let reward_claim = self.reward_claim_repo.get(db_manager.get_connection().await?.into(), claim_id).await?;
+
+        tracing::debug!("reward_claim.reward_claim_status: {:?} vs {:?}", reward_claim.reward_claim_status, RewardClaimStatus::Ready);
+        if !reward_claim.reward_claim_status.eq(&RewardClaimStatus::Ready) {
+            return Err(Error::InvalidClaimStatusForApprove);
+        }
+
+        let new_reward_claim_detail = NewRewardClaimDetail {
+            id: Uuid::new_v4(),
+            reward_claim_id: claim_id,
+            transaction_hash: String::new(),
+            sended_user_id: Uuid::new_v4(), // todo: get user_id from cookie
+            sended_user_address: String::new(),
+        };
+        let near_rpc_manager: Arc<dyn RpcClient> = Arc::clone(&self.near_rpc_manager) as Arc<dyn RpcClient>;
+
+        let tx_result_response = near_usecase_impl::relay(&near_rpc_manager, payload.encode_signed_delegate).await;
+        match tx_result_response {
+            Ok(tx_result) => {
+                let updated_claim: RewardClaim;
+                let mut detail: NewRewardClaimDetail = new_reward_claim_detail;
+                detail.transaction_hash = tx_result.transaction_hash.to_string();
+                detail.sended_user_address = tx_result.receiver_id.to_string();
+                if let FinalExecutionStatus::Failure(_) = tx_result.status {
+                    updated_claim = self.reward_claim_repo.update_status(
+                        db_manager.get_connection().await?.into(),
+                        claim_id,
+                        RewardClaimStatus::TransactionFailed,
+                    ).await?;
+                }else {
+                    updated_claim = self.reward_claim_repo.update_status(
+                        db_manager.get_connection().await?.into(),
+                        claim_id,
+                        RewardClaimStatus::TransactionApproved,
+                    ).await?;
+                }
+                
+                let claim_detail = self.reward_claim_repo.insert_detail(db_manager.get_connection().await?.into(), detail).await?;
+                Ok(RewardClaimApproveResponse::from((updated_claim, claim_detail)))
+            }
+            Err(e) => {
+                Err(crate::adapter::input::error::Error::UsecaseError(e))
+            }
+        }
     }
 }

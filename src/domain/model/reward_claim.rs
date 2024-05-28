@@ -8,6 +8,7 @@ use bigdecimal::BigDecimal;
 use super::coin::Coin;
 use super::coin_network::{CoinNetworkDetailsResponse, CoinNetworkResponse};
 use super::network::Network;
+use super::reward_claim_detail::{RewardClaimDetail, RewardClaimDetailResponse};
 use super::TimestampTrait;
 use crate::domain::model::coin_network::CoinNetwork;
 use crate::adapter::output::persistence::db::schema::reward_claim;
@@ -36,6 +37,19 @@ impl From<String> for RewardClaimStatus {
             "TRANSACTION_FAILED" => RewardClaimStatus::TransactionFailed,
             "REJECTED" => RewardClaimStatus::Rejected,
             _ => RewardClaimStatus::Ready,
+        }
+    }
+}
+
+impl PartialEq for RewardClaimStatus {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (RewardClaimStatus::Ready, RewardClaimStatus::Ready) => true,
+            (RewardClaimStatus::PendingApproval, RewardClaimStatus::PendingApproval) => true,
+            (RewardClaimStatus::TransactionApproved, RewardClaimStatus::TransactionApproved) => true,
+            (RewardClaimStatus::TransactionFailed, RewardClaimStatus::TransactionFailed) => true,
+            (RewardClaimStatus::Rejected, RewardClaimStatus::Rejected) => true,
+            _ => false,
         }
     }
 }
@@ -86,7 +100,7 @@ pub struct NewRewardClaimPayload {
 }
 
 #[derive(Serialize)]
-pub struct RewardClaimResponse {
+pub struct CombinedRewardClaimResponse {
     id: String,
     amount: String,
     mission_id: String,
@@ -98,7 +112,7 @@ pub struct RewardClaimResponse {
     updated_date: String,
 }
 
-impl From<(RewardClaim, CoinNetwork, Coin, Network)> for RewardClaimResponse {
+impl From<(RewardClaim, CoinNetwork, Coin, Network)> for CombinedRewardClaimResponse {
     fn from((claim, coin_network, coin, network): (RewardClaim, CoinNetwork, Coin, Network)) -> Self {
         Self {
             id: claim.id.to_string(),
@@ -110,6 +124,55 @@ impl From<(RewardClaim, CoinNetwork, Coin, Network)> for RewardClaimResponse {
             reward_claim_status: claim.reward_claim_status,
             created_date: claim.created_date.to_string(),
             updated_date: claim.updated_date.to_string(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct RewardClaimResponse {
+    id: String,
+    amount: String,
+    mission_id: String,
+    coin_network_id: String,
+    user_id: String,
+    user_address: String,
+    reward_claim_status: RewardClaimStatus,
+    created_date: String,
+    updated_date: String,
+}
+
+impl From<RewardClaim> for RewardClaimResponse {
+    fn from(claim: RewardClaim) -> Self {
+        Self {
+            id: claim.id.to_string(),
+            amount: claim.amount.to_string(),
+            mission_id: claim.mission_id.to_string(),
+            coin_network_id: claim.coin_network_id.to_string(),
+            user_id: claim.user_id.to_string(),
+            user_address: claim.user_address,
+            reward_claim_status: claim.reward_claim_status,
+            created_date: claim.created_date.to_string(),
+            updated_date: claim.updated_date.to_string(),
+        }
+    }
+}
+
+#[derive(Deserialize, Clone)]
+pub struct RewardClaimApprovePayload {
+    pub encode_signed_delegate: Vec<u8>,
+}
+
+#[derive(Serialize)]
+pub struct RewardClaimApproveResponse {
+    reward_claim: RewardClaimResponse,
+    reward_claim_detail: RewardClaimDetailResponse
+}
+
+impl From<(RewardClaim, RewardClaimDetail)> for RewardClaimApproveResponse {
+    fn from((claim, detail): (RewardClaim, RewardClaimDetail)) -> Self {
+        Self {
+            reward_claim: RewardClaimResponse::from(claim),
+            reward_claim_detail: RewardClaimDetailResponse::from(detail),
         }
     }
 }

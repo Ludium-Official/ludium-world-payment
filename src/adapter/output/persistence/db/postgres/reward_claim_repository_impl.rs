@@ -2,7 +2,7 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::domain::model::{reward_claim::{NewRewardClaim, NewRewardClaimPayload, RewardClaim, RewardClaimStatus}, Error, Result};
+use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, NewRewardClaimPayload, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}, Error, Result}};
 use crate::port::output::reward_claim_repository::RewardClaimRepository;
 use super::{adapt_db_error, reward_claim};
 
@@ -65,11 +65,27 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
-    async fn update_status(&self, conn: Object, reward_claim_id: Uuid, status: RewardClaimStatus) -> Result<RewardClaim> {
+    async fn update_status(
+        &self, 
+        conn: Object, 
+        reward_claim_id: Uuid, 
+        status: RewardClaimStatus, 
+    ) -> Result<RewardClaim> {
         conn.interact(move |conn| {
             diesel::update(reward_claim::table.find(reward_claim_id))
                 .set(reward_claim::reward_claim_status.eq(status))
                 .get_result::<RewardClaim>(conn)
+        })
+        .await
+        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .map_err(|e| Error::from(adapt_db_error(e)))
+    }
+
+    async fn insert_detail(&self, conn: Object, new_reward_claim_detail: NewRewardClaimDetail) -> Result<RewardClaimDetail> {
+        conn.interact(|conn| {
+            diesel::insert_into(reward_claim_detail::table)
+                .values(new_reward_claim_detail)
+                .get_result::<RewardClaimDetail>(conn)
         })
         .await
         .map_err(|e| Error::from(adapt_db_error(e)))?

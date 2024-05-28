@@ -18,7 +18,7 @@ use crate::{
             error::Error, 
             routes_static, 
             web::{self, middleware::{auth, response}, routes_hello, routes_login}
-        }, output::persistence::db::postgres::{coin_network_repository_impl::PostgresCoinNetworkRepository, coin_repository_impl::PostgresCoinRepository, network_repository_impl::PostgresNetworkRepository, reward_claim_repository_impl::PostgresRewardClaimRepository}}, 
+        }, output::{near::NearRpcManager, persistence::db::postgres::{coin_network_repository_impl::PostgresCoinNetworkRepository, coin_repository_impl::PostgresCoinRepository, network_repository_impl::PostgresNetworkRepository, reward_claim_repository_impl::PostgresRewardClaimRepository}}}, 
     config::{config, log::{self, log_request}}, usecase::{reward_claim_usecase_impl::RewardClaimUsecaseImpl, utrait::reward_claim_usecase::RewardClaimUsecase}
 };
 pub use self::adapter::input::error::Result;
@@ -57,7 +57,7 @@ struct AppState {
     coin_network_repo: Arc<PostgresCoinNetworkRepository>,
     reward_claim_repo: Arc<PostgresRewardClaimRepository>,
     reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync>,
-    near_rpc_client: Arc<near_fetch::Client>,
+    near_rpc_manager: Arc<NearRpcManager>, // todo: delete me! process_meta_tx use me 
 }
 
 #[tokio::main]
@@ -73,11 +73,12 @@ async fn main() -> Result<()>{
     let network_repo = Arc::new(PostgresNetworkRepository);
     let coin_network_repo = Arc::new(PostgresCoinNetworkRepository);
     let reward_claim_repo = Arc::new(PostgresRewardClaimRepository);
-    let near_rpc_client = Arc::new(config.near_network_config.rpc_client());
+    let near_rpc_manager = Arc::new(NearRpcManager::new(config.near_network_config.rpc_client()));
     let reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync> = Arc::new(RewardClaimUsecaseImpl::new(
         Arc::clone(&db_manager),
         Arc::clone(&reward_claim_repo),
         Arc::clone(&coin_network_repo),
+        Arc::clone(&near_rpc_manager),
     ));
 
     let app_state = Arc::new(AppState {
@@ -88,7 +89,7 @@ async fn main() -> Result<()>{
         coin_network_repo: Arc::clone(&coin_network_repo),
         reward_claim_repo: Arc::clone(&reward_claim_repo),
         reward_claim_usecase: Arc::clone(&reward_claim_usecase),
-        near_rpc_client: Arc::clone(&near_rpc_client),
+        near_rpc_manager: Arc::clone(&near_rpc_manager),
     });
 
     let routes_apis = web::routes_user::routes(Arc::clone(&app_state))

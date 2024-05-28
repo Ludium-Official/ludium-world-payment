@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use serde_json::json;
+use tokio::fs;
 
 #[ignore]
 #[tokio::test]
@@ -80,6 +81,14 @@ async fn quick_dev2() -> Result<()> {
             },
         ]
     )).await?.print().await?;
+
+    hc.do_put("/api/reward_claims/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/reject", json!({})).await?.print().await?;
+
+    // --- relay test 
+    let payload: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string("tests/data/approve_payload.json").await?
+    )?;
+    hc.do_put("/api/reward_claims/3c4d5e6a-7a8b-9c0d-1e2a-3a41111d0000/approve", payload).await?.print().await?;
 
     Ok(())
 }

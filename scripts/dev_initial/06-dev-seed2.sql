@@ -15,9 +15,10 @@ INSERT INTO public.coin_network (id, coin_id, network_id, contract_address) VALU
 -- Insert into reward_claim table
 INSERT INTO public.reward_claim (id, mission_id, coin_network_id, reward_claim_status, amount, user_id, user_address) VALUES 
 ('1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d', '5f4d3c2b-1a0e-9f8d-7c6b-5a4d3c2e1f0a', '1859ebb9-d031-473a-8241-b0b6832c2652', 'READY', 100.00, 'd7f6e5c4-b3a2-1f0e-9d8c-7b6a5d4e3f2c', 'user_wallet_address_1'),
-('2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', '4d3c2b1a-0e9f-8d7c-6b5a-4d3c2e1f0a5d', '3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'PENDING_APPROVAL', 200.00, 'e5c4d3b2-a1f0-9e8d-7c6b-5a4d3c2f1e0d', 'user_wallet_address_2');
+('2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', '4d3c2b1a-0e9f-8d7c-6b5a-4d3c2e1f0a5d', '3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'TRANSACTION_APPROVED', 200.00, 'e5c4d3b2-a1f0-9e8d-7c6b-5a4d3c2f1e0d', 'user_wallet_address_2'),
+('3c4d5e6a-7a8b-9c0d-1e2a-3a41111d0000', '2b1a0e9f-8d7c-6b5a-4d3c-abcd2e1f0a5d', '1859ebb9-d031-473a-8241-b0b6832c2652', 'READY', 300.00, '4d3c2b1a-0e9f-8d7c-6b5a-4d3c2e1f0a5d', 'user_wallet_address_3'),
+('4d5e6f7a-8b9c-0d1e-2f3a-4a1234c6d000', '3c2b1a0e-9f8d-7c6b-5a4d-abcd3c2e1f0a', '3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'READY', 400.00, '5e6f7a8b-9c0d-1e2f-3a4b-abcd5c6d7e8f', 'user_wallet_address_4');
 
 -- Insert into reward_claim_detail table
 INSERT INTO public.reward_claim_detail (id, reward_claim_id, transaction_hash, sended_user_id, sended_user_address) VALUES 
-('3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d', 'tx_hash_1', 'a1f0e9d8-7c6b-5a4d-3c2f-1e0d2b3c4d5e', 'sender_wallet_address_1'),
 ('4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a', '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', 'tx_hash_2', 'b2a1f0e9-8d7c-6b5a-4d3c-2f1e0d2b3c4d', 'sender_wallet_address_2');

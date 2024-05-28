@@ -2,7 +2,7 @@ use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
 use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::{adapter::output::persistence::db, domain::model};
+use crate::{adapter::output::persistence::db, domain::model, usecase};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -24,19 +24,23 @@ pub enum Error {
 	UserNicknameNotFound { nickname: String },
 	CoinNetworkIdNotFound { id: String },
 	RewardClaimDuplicate { mission_id: String, user_id: String },
+	InvalidClaimStatusForReject,
+	InvalidClaimStatusForApprove,
 
 	// -- Domain
 	Model(model::Error),
 
 	// -- Database
-	NotFound,
     DatabaseError(db::DbError),
 
-	// -- Payment
-	PaymentFail,
+	// -- Usecase 
+	UsecaseError(usecase::error::Error),
 
 	// -- Deserialization
 	DeserializationError { message: String },
+
+	// -- Near 
+	TxError { message: String },
 }
 
 // region:    --- Error Boilerplate
@@ -61,12 +65,6 @@ struct ErrorResponse {
 impl IntoResponse for Error {
 	fn into_response(self) -> Response {
 		tracing::debug!("[into_response] - {self:?}");
-
-		// let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
-
-		// response.extensions_mut().insert(self);
-
-		// response
 
 		let (status, client_error) = self.client_status_and_error();
         let error_response = ErrorResponse {
@@ -114,6 +112,12 @@ impl Error {
 impl From<model::Error> for Error {
     fn from(error: model::Error) -> Self {
         Self::Model(error)
+    }
+}
+
+impl From<usecase::error::Error> for Error {
+    fn from(error: usecase::error::Error) -> Self {
+        Self::UsecaseError(error)
     }
 }
 
