@@ -41,16 +41,16 @@ async fn quick_dev2() -> Result<()> {
         "password": "welcome"
     })).await?.print().await?;
 
-    // // coin
-    // hc.do_get("/api/coins").await?.print().await?;
-    // hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853").await?.print().await?;
+    // coin
+    hc.do_get("/api/coins").await?.print().await?;
+    hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853").await?.print().await?;
 
-    // // network 
-    // hc.do_get("/api/networks").await?.print().await?;
+    // network 
+    hc.do_get("/api/networks").await?.print().await?;
 
-    // // coin_network
-    // hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853/networks").await?.print().await?;
-    // hc.do_get("/api/coins/5cb2dca4-b693-49b5-bd20-00ddce72d54b/networks").await?.print().await?;
+    // coin_network
+    hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853/networks").await?.print().await?;
+    hc.do_get("/api/coins/5cb2dca4-b693-49b5-bd20-00ddce72d54b/networks").await?.print().await?;
 
     // reward_claims
     hc.do_post("/api/reward_claims", json!({

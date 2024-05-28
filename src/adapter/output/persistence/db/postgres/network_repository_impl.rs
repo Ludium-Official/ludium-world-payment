@@ -2,8 +2,9 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::domain::model::{network::{Network, NewNetwork, NewNetworkPayload}, Error, Result};
+use crate::domain::model::network::{Network, NewNetwork, NewNetworkPayload};
 use crate::port::output::network_repository::NetworkRepository;
+use crate::adapter::output::persistence::db::error::{Error, Result};
 use super::{adapt_db_error, network};
 
 #[derive(Clone, Debug)]
@@ -23,8 +24,7 @@ impl NetworkRepository for PostgresNetworkRepository {
                 .values(new_network)
                 .get_result::<Network>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -32,8 +32,7 @@ impl NetworkRepository for PostgresNetworkRepository {
         conn.interact(move |conn| {
             network::table.find(id).get_result::<Network>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -41,8 +40,7 @@ impl NetworkRepository for PostgresNetworkRepository {
         conn.interact(|conn| {
             network::table.load::<Network>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 }

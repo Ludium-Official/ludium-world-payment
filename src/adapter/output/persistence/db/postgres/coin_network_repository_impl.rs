@@ -2,9 +2,10 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::{adapter::output::persistence::db::schema::{coin, network}, domain::model::{coin::Coin, coin_network::{CoinNetwork, NewCoinNetwork, NewCoinNetworkPayload}, network::Network, Error, Result}};
+use crate::{adapter::output::persistence::db::schema::{coin, network}, domain::model::{coin::Coin, coin_network::{CoinNetwork, NewCoinNetwork, NewCoinNetworkPayload}, network::Network}};
 use crate::port::output::coin_network_repository::CoinNetworkRepository;
 use super::{adapt_db_error, coin_network};
+use crate::adapter::output::persistence::db::error::{Result, Error};
 
 #[derive(Clone, Debug)]
 pub struct PostgresCoinNetworkRepository;
@@ -24,8 +25,7 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .values(new_coin_network)
                 .get_result::<CoinNetwork>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -35,8 +35,7 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .find(coin_network_id)
                 .get_result::<CoinNetwork>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -50,8 +49,7 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .first::<(CoinNetwork, Coin, Network)>(conn)
                 .map_err(adapt_db_error)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(e));
 
         Ok(result.map_err(|e| Error::from(e))?)
@@ -67,11 +65,9 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .load::<(CoinNetwork, Coin, Network)>(conn)
                 .map_err(adapt_db_error)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(e));
-
-        // result.map_err(adapt_db_error)
+    
         Ok(result.map_err(|e| Error::from(e))?)
     }
 
@@ -81,8 +77,7 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .filter(coin_network::coin_id.eq(coin_id))
                 .load::<CoinNetwork>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -90,8 +85,7 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
         conn.interact(|conn| {
             coin_network::table.load::<CoinNetwork>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 }

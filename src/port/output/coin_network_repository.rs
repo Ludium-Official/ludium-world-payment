@@ -1,7 +1,8 @@
 use axum::async_trait;
 use uuid::Uuid;
 use deadpool_diesel::postgres::Object;
-use crate::domain::model::{coin::Coin, coin_network::{CoinNetwork, NewCoinNetworkPayload}, network::Network, Result};
+use crate::domain::model::{coin::Coin, coin_network::{CoinNetwork, NewCoinNetworkPayload}, network::Network};
+use crate::adapter::output::persistence::db::error::Result;
 
 #[async_trait]
 pub trait CoinNetworkRepository {

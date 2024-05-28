@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use deadpool_diesel::postgres::Object;
 use uuid::Uuid;
-use crate::domain::model::{reward_claim::{NewRewardClaimPayload, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}, Result};
+use crate::domain::model::{reward_claim::{NewRewardClaimPayload, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}};
+use crate::adapter::output::persistence::db::error::Result;
 
 #[async_trait]
 pub trait RewardClaimRepository {

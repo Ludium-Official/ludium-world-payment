@@ -1,7 +1,7 @@
 use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use uuid::Uuid;
-use crate::domain::model::Result;
+use crate::adapter::output::persistence::db::error::Result;
 use crate::domain::model::user::{NewUserPayload, User};
 
 #[async_trait]

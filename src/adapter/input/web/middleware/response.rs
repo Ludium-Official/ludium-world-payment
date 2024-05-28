@@ -1,8 +1,6 @@
-use axum::{http::{Method, StatusCode, Uri}, response::{IntoResponse, Response}, routing::get_service, Json, Router};
+use axum::{http::{Method, Uri}, response::{IntoResponse, Response}, Json};
 use serde_json::json;
 use uuid::Uuid;
-use tower_http::services::ServeDir;
-
 use crate::{adapter::input::{ctx::Ctx, error::Error}, config::log::log_request};
 
 
@@ -22,10 +20,10 @@ pub async fn mapper(
 	let error_response =
 		client_status_error
 			.as_ref()
-			.map(|(status_code, client_error)| {
+			.map(|(status_code, client_error_message)| {
 				let client_error_body = json!({
 					"error": {
-						"type": client_error.as_ref(),
+						"type": client_error_message.clone(),
 						"req_uuid": uuid.to_string(),
 					}
 				});
@@ -34,11 +32,11 @@ pub async fn mapper(
 				(*status_code, Json(client_error_body)).into_response()
 			});
 
-	let client_error = client_status_error.unzip().1;
+	let client_error_message = client_status_error.unzip().1;
 
 	// TODO: Need to hander if log_request fail (but should not fail request)
 	let _ =
-		log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
+		log_request(uuid, req_method, uri, ctx, service_error, client_error_message.clone().as_ref()).await;
 
 	error_response.unwrap_or(res)
 }

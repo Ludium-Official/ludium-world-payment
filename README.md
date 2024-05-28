@@ -1,7 +1,9 @@
 # Ludium Reward Payment System
 ## About
-ludium reward payment axum backend in off-chain, relayer in on-chain system. 
-- project structre: check the ARCHITECTURE.md 
+Ludium Reward Payment is an Axum backend system for off-chain transactions and an on-chain relayer system.
+
+## Project Structure
+check the [ARCHITECTURE.md](https://github.com/Ludium-Official/ludium-world-payment/blob/main/README.md)
 
 
 ## Local Execution
@@ -22,6 +24,7 @@ docker-compose -f ./docker-compose.localdb.yml up -d
 
 ### create db schema
 ```
+# diesel print-schema --database-url={db_url} > {print_path}
 diesel print-schema --database-url=postgres://postgres:postgres@localhost:5432/ludium_local > src/adapter/output/persistence/db/schema.rs
 ```
 

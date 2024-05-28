@@ -7,7 +7,6 @@ use crate::domain::model::network::Network;
 
 use super::coin::CoinResponse;
 use super::network::NetworkResponse;
-use super::TimestampTrait;
 use chrono::NaiveDateTime;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Associations)]
@@ -21,16 +20,6 @@ pub struct CoinNetwork {
     pub contract_address: Option<String>,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
-}
-
-impl TimestampTrait for CoinNetwork {
-    fn created_date(&self) -> NaiveDateTime {
-        self.created_date
-    }
-
-    fn updated_date(&self) -> NaiveDateTime {
-        self.updated_date
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Insertable)]

@@ -1,20 +1,14 @@
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::info;
-use std::time::Duration;
 
 use deadpool_diesel::postgres::{Manager, Pool};
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 // NOTE: Hardcode to prevent deployed system db update.
 // sql files
 const SQL_RECREATE_DB_FILE_NAME: &str = "00-recreate-db.sql";
 const SQL_DIR: &str = "scripts/dev_initial";
-const DEMO_PWD: &str = "welcome";
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("scripts/dev_initial/");
 
 pub async fn init_dev_db(database_url: &str, admin_database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("{:} - init_dev_db()", "[DEV-ONLY]");

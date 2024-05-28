@@ -1,10 +1,10 @@
 use axum::async_trait;
-use deadpool_diesel::postgres::{Manager, Object, Pool};
+use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::domain::model::{Error, Result};
+use crate::adapter::output::persistence::db::error::{Error, Result};
 use crate::domain::model::user::{NewUser, NewUserPayload, User};
-use crate::port::output::{UserRepository, DbManager};
+use crate::port::output::{db_manager::DbManager, UserRepository};
 
 use super::{adapt_db_error, tb_ldm_usr};
 

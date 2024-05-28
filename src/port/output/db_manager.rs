@@ -1,6 +1,6 @@
 use axum::async_trait;
 use deadpool_diesel::postgres::Object;
-use crate::domain::model::Result;
+use crate::adapter::output::persistence::db::error::Result;
 
 #[async_trait]
 pub trait DbManager {

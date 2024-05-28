@@ -1,9 +1,10 @@
-
-
-// region -- ApiKey
-
+use near_fetch::signer::KeyRotatingSigner;
+use once_cell::sync::Lazy;
+use near_crypto::InMemorySigner;
 use std::fmt::Debug;
+use crate::LOCAL_CONF;
 
+// region: --- ApiKey
 #[derive(Eq, Hash, Clone, Debug, PartialEq)]
 pub struct ApiKey(pub near_jsonrpc_client::auth::ApiKey);
 
@@ -47,7 +48,7 @@ impl<'de> serde::de::Deserialize<'de> for ApiKey {
     }
 }
 
-// endregion -- ApiKey
+// endregion: --- ApiKey
 
 #[derive(Debug)]
 pub struct NearNetworkConfig {
@@ -69,3 +70,17 @@ impl NearNetworkConfig {
         json_rpc_client
     }
 }
+
+
+// region: --- near signer setup
+pub static ROTATING_SIGNER: Lazy<KeyRotatingSigner> = Lazy::new(|| {
+    let path = LOCAL_CONF
+        .get::<String>("keys_filename")
+        .expect("Failed to read 'keys_filename' from config");
+    let keys_file = std::fs::File::open(path).expect("Failed to open keys file");
+    let signers: Vec<InMemorySigner> =
+        serde_json::from_reader(keys_file).expect("Failed to parse keys file");
+
+    KeyRotatingSigner::from_signers(signers)
+});
+// endregion --- near signer setup

@@ -3,13 +3,11 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use diesel_derive_enum::DbEnum;
-use diesel::sql_types::Decimal;
 use bigdecimal::BigDecimal;
 use super::coin::Coin;
-use super::coin_network::{CoinNetworkDetailsResponse, CoinNetworkResponse};
+use super::coin_network::CoinNetworkDetailsResponse;
 use super::network::Network;
 use super::reward_claim_detail::{RewardClaimDetail, RewardClaimDetailResponse};
-use super::TimestampTrait;
 use crate::domain::model::coin_network::CoinNetwork;
 use crate::adapter::output::persistence::db::schema::reward_claim;
 
@@ -66,16 +64,6 @@ pub struct RewardClaim {
     pub user_address: String,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
-}
-
-impl TimestampTrait for RewardClaim {
-    fn created_date(&self) -> NaiveDateTime {
-        self.created_date
-    }
-
-    fn updated_date(&self) -> NaiveDateTime {
-        self.updated_date
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Insertable)]

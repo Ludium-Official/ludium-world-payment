@@ -1,8 +1,7 @@
-use deadpool_diesel::postgres::Pool;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{adapter::output::persistence::db::{error::adapt_db_error, schema::tb_ldm_usr}, domain::model::{Error,Result}, port::output::{DbManager, UserRepository}};
+use crate::adapter::output::persistence::db::schema::tb_ldm_usr;
 
 #[derive(Clone, Debug, Queryable, Identifiable)]
 #[diesel(table_name = tb_ldm_usr)]

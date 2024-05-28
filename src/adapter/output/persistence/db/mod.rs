@@ -3,5 +3,4 @@ pub mod schema;
 pub mod postgres;
 pub mod _dev_utils;
 
-
-pub use self::error::DbError;
+pub use self::error::Error;

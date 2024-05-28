@@ -5,7 +5,7 @@ CREATE TABLE public.reward_claim (
     mission_id uuid NOT NULL,
     coin_network_id uuid NOT NULL,
     reward_claim_status reward_claim_status NOT NULL DEFAULT 'READY',
-    amount numeric NOT NULL, -- 청구 금액
+    amount numeric(20,5) NOT NULL, -- 청구 금액
     user_id uuid NOT NULL, -- 받을 사용자 user id
     user_address varchar(100) NOT NULL, -- 받을 사용자 지갑 주소
     created_date timestamp NOT NULL DEFAULT NOW(),

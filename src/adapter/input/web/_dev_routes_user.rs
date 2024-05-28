@@ -2,14 +2,14 @@
 
 use std::sync::Arc;
 
-use crate::adapter::input::ctx::{self, Ctx};
+use crate::adapter::input::ctx::Ctx;
 
 use crate::adapter::input::error::{Result, Error};
-use crate::domain::model::user::{NewUserPayload, User, UserResponse};
+use crate::domain::model::user::{NewUserPayload, UserResponse};
 use crate::port::output::{DbManager, UserRepository};
 use crate::AppState;
 use axum::extract::{Path, State};
-use axum::routing::{delete, get, post};
+use axum::routing::get;
 use axum::{Extension, Json, Router};
 
 pub fn routes(state: Arc<AppState>) -> Router {

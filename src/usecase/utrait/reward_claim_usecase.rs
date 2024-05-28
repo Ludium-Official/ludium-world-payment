@@ -1,7 +1,7 @@
 use axum::async_trait;
 use uuid::Uuid;
-use crate::adapter::input::error::{Result, Error};
 use crate::domain::model::reward_claim::{CombinedRewardClaimResponse, NewRewardClaimPayload, RewardClaimApprovePayload, RewardClaimApproveResponse, RewardClaimResponse};
+use crate::usecase::error::Result;
 
 #[async_trait]
 pub trait RewardClaimUsecase {

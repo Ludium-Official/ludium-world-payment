@@ -2,9 +2,10 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, NewRewardClaimPayload, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}, Error, Result}};
+use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, NewRewardClaimPayload, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
 use crate::port::output::reward_claim_repository::RewardClaimRepository;
 use super::{adapt_db_error, reward_claim};
+use crate::adapter::output::persistence::db::error::{Result, Error};
 
 #[derive(Clone, Debug)]
 pub struct PostgresRewardClaimRepository;
@@ -28,8 +29,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
                 .values(new_reward_claim)
                 .get_result::<RewardClaim>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -39,8 +39,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
                 .find(reward_claim_id)
                 .get_result::<RewardClaim>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -51,8 +50,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
                 .filter(reward_claim::user_id.eq(user_id))
                 .first::<RewardClaim>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -60,8 +58,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         conn.interact(|conn| {
             reward_claim::table.load::<RewardClaim>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -69,15 +66,13 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         &self, 
         conn: Object, 
         reward_claim_id: Uuid, 
-        status: RewardClaimStatus, 
-    ) -> Result<RewardClaim> {
+        status: RewardClaimStatus) -> Result<RewardClaim> {
         conn.interact(move |conn| {
             diesel::update(reward_claim::table.find(reward_claim_id))
                 .set(reward_claim::reward_claim_status.eq(status))
                 .get_result::<RewardClaim>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -87,8 +82,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
                 .values(new_reward_claim_detail)
                 .get_result::<RewardClaimDetail>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 }

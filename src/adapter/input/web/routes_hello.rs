@@ -7,8 +7,6 @@ struct HelloParams {
 	name: Option<String>,
 }
 
-// region:    --- Routes Hello
-
 pub fn routes() -> Router {
 	Router::new()
 		.route("/hello", get(handler_hello))
@@ -20,5 +18,3 @@ async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
 	let name = params.name.as_deref().unwrap_or("World!");
 	Html(format!("Hello <strong>{name}</strong>"))
 }
-
-// endregion: --- Routes Hello

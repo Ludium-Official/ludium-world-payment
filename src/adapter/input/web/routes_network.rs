@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use axum::extract::State;
-use axum::{Router, Json, Extension, extract::Path, routing::get, routing::post};
+use axum::{Router, Json, Extension, extract::Path, routing::get};
 use crate::adapter::input::ctx::Ctx;
 use crate::domain::model::network::{NetworkResponse, NewNetworkPayload};
 use crate::port::output::network_repository::NetworkRepository;
@@ -52,7 +52,7 @@ async fn get_network(
 ) -> Result<Json<NetworkResponse>> {
     tracing::debug!("[handler] get_network");
 
-    let id = Uuid::parse_str(&id).map_err(|_| Error::InputInvalid{ field: "id".to_string(), message: "Invalid UUID".to_string()})?;
+    let id = Uuid::parse_str(&id).map_err(|_| Error::UUIDParsingError{ message: format!("Invalid UUID: {}", id)})?;
     let network = state
         .network_repo
         .get(state.db_manager.get_connection().await?, id)

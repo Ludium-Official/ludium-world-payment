@@ -1,5 +1,5 @@
 pub mod log; 
-mod near;
+pub mod near;
 
 use std::env;
 use dotenvy::dotenv;

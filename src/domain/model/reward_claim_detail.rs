@@ -2,12 +2,10 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use bigdecimal::BigDecimal;
 
 use crate::adapter::output::persistence::db::schema::reward_claim_detail;
 use crate::domain::model::reward_claim::RewardClaim;
 
-use super::base::TimestampTrait;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Associations)]
 #[diesel(table_name = reward_claim_detail)]
@@ -20,16 +18,6 @@ pub struct RewardClaimDetail {
     pub sended_user_address: String,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
-}
-
-impl TimestampTrait for RewardClaimDetail {
-    fn created_date(&self) -> NaiveDateTime {
-        self.created_date
-    }
-
-    fn updated_date(&self) -> NaiveDateTime {
-        self.updated_date
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Insertable)]

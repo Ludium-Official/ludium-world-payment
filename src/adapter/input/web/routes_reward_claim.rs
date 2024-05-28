@@ -1,10 +1,9 @@
 use std::sync::Arc;
-use axum::{Router, Json, Extension, extract::{Path, State}, routing::{get, post, put, delete}};
+use axum::{Router, Json, Extension, extract::{Path, State}, routing::{post, put}};
 use crate::{adapter::input::ctx::Ctx, domain::model::reward_claim::{RewardClaimApprovePayload, RewardClaimApproveResponse, RewardClaimResponse}};
-use crate::domain::model::reward_claim::{NewRewardClaimPayload, CombinedRewardClaimResponse, RewardClaimStatus};
-use crate::port::output::{DbManager, reward_claim_repository::RewardClaimRepository};
+use crate::domain::model::reward_claim::{NewRewardClaimPayload, CombinedRewardClaimResponse};
 use crate::AppState;
-use crate::adapter::input::error::{Error, Result};
+use crate::adapter::input::error::Result;
 use uuid::Uuid;
 
 pub fn routes(state: Arc<AppState>) -> Router {
@@ -42,7 +41,7 @@ async fn reject_reward_claim(
     State(state): State<Arc<AppState>>,
     Extension(ctx): Extension<Ctx>,
     Path(id): Path<Uuid>,
-    Json(payload): Json<serde_json::Value>,
+    Json(_payload): Json<serde_json::Value>,
 ) -> Result<Json<RewardClaimResponse>> {
     // TODO: is_admin?
     let reward_claim = state.reward_claim_usecase.reject_reward_claim(id).await?;

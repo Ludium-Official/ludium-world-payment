@@ -18,7 +18,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 use crate::adapter::input::ctx::Ctx;
-use crate::adapter::input::error::{ClientError, Result, Error};
+use crate::adapter::input::error::{Result, Error};
 
 
 pub fn init_tracing() {
@@ -75,7 +75,7 @@ pub async fn log_request(
 	uri: Uri,
 	ctx: Option<Ctx>,
 	service_error: Option<&Error>,
-	client_error: Option<ClientError>,
+	client_error_message: Option<&String>,
 ) -> Result<()> {
 	let timestamp = SystemTime::now()
 		.duration_since(UNIX_EPOCH)
@@ -96,7 +96,7 @@ pub async fn log_request(
 
 		user_id: ctx.map(|c| c.user_id()),
 
-		client_error_type: client_error.map(|e| e.as_ref().to_string()),
+		client_error_type: client_error_message.map(|s| s.to_string()),
 
 		error_type,
 		error_data,

@@ -1,11 +1,9 @@
 use chrono::NaiveDateTime;
-use diesel::sql_types::Text;
 use diesel_derive_enum::DbEnum;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::adapter::output::persistence::db::schema::{coin, coin_network, network};
-use super::TimestampTrait;
+use crate::adapter::output::persistence::db::schema::coin;
 
 #[derive(Clone, Debug, Serialize, Deserialize, DbEnum)]
 #[ExistingTypePath = "crate::adapter::output::persistence::db::schema::sql_types::CoinType"]
@@ -48,16 +46,6 @@ pub struct Coin {
     pub coin_type: CoinType,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
-}
-
-impl TimestampTrait for Coin {
-    fn created_date(&self) -> NaiveDateTime {
-        self.created_date
-    }
-
-    fn updated_date(&self) -> NaiveDateTime {
-        self.updated_date
-    }
 }
 
 #[derive(Insertable, Debug, Clone)]

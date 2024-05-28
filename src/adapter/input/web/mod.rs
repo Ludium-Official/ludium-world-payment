@@ -8,5 +8,5 @@ pub mod routes_reward_claim;
 // local test only
 pub const AUTH_TOKEN: &str = "auth-token";
 
-pub mod routes_login;
-pub mod routes_user;
+pub mod _dev_routes_login;
+pub mod _dev_routes_user;

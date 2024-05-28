@@ -1,12 +1,7 @@
 use axum::async_trait;
 use deadpool_diesel::postgres::{Manager, Object, Pool};
-use diesel::prelude::*;
-use uuid::Uuid;
-use crate::domain::model::{Error, Result};
-use crate::domain::model::user::{User, NewUser};
-use crate::port::output::{UserRepository, DbManager};
-
-use super::error::adapt_db_error;
+use crate::port::output::DbManager;
+use super::error::{Result, Error, adapt_db_error};
 use super::schema::{tb_ldm_usr, coin, network, coin_network, reward_claim};
 pub mod user_repository_impl;
 pub mod coin_repository_impl;
@@ -32,10 +27,6 @@ impl PostgresDbManager {
         Ok(PostgresDbManager {
             db_pool: pool,
         })
-    }
-
-    pub fn from(pool: Pool) -> Self {
-        PostgresDbManager { db_pool: pool }
     }
 }
 

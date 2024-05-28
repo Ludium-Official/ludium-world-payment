@@ -1,15 +1,11 @@
-use axum::{http::{Method, Uri}, response::{IntoResponse, Response}, routing::get_service, Json, Router};
-use serde_json::json;
-use uuid::Uuid;
+use axum::{routing::get_service, Router};
 use tower_http::services::ServeDir;
 
-use crate::config::log::log_request;
 
 pub mod web;
 pub mod ctx;
 pub mod error;
 
-pub use self::error::{Result, Error};
 
 pub fn routes_static() -> Router {
     let static_files_path = "./";

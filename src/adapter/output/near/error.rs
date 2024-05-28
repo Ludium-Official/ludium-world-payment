@@ -1,4 +1,3 @@
-use std::fmt;
 use serde::Serialize;
 use serde_with::serde_as;
 
@@ -7,7 +6,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[serde_as]
 #[derive(Debug, Serialize, Clone)]
 pub enum Error {
-    TransactionError(String),
+    TransactionNotExecuted { message: String },
 }
 
 impl core::fmt::Display for Error {

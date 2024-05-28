@@ -2,9 +2,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::adapter::output::persistence::db::schema::network;
-use super::TimestampTrait;
 use chrono::NaiveDateTime;
-
 #[derive(Debug, Clone, Queryable, Identifiable)]
 #[diesel(table_name = network)]
 pub struct Network {
@@ -13,16 +11,6 @@ pub struct Network {
     pub code: String,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
-}
-
-impl TimestampTrait for Network {
-    fn created_date(&self) -> NaiveDateTime {
-        self.created_date
-    }
-
-    fn updated_date(&self) -> NaiveDateTime {
-        self.updated_date
-    }
 }
 
 #[derive(Debug, Clone, Insertable)]

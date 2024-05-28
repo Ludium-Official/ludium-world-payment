@@ -1,7 +1,7 @@
 use axum::async_trait;
 use uuid::Uuid;
 use deadpool_diesel::postgres::Object;
-use crate::domain::model::Result;
+use crate::adapter::output::persistence::db::error::Result;
 use crate::domain::model::network::{Network, NewNetworkPayload};
 
 #[async_trait]

@@ -1,8 +1,8 @@
 use axum::async_trait;
-use deadpool_diesel::postgres::{Object, Pool};
+use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::domain::model::{Error, Result};
+use crate::adapter::output::persistence::db::error::{Error, Result};
 use crate::{domain::model::coin::{Coin, CoinType, NewCoin, NewCoinPayload}, port::output::coin_repository::CoinRepository};
 
 use super::{adapt_db_error, coin};
@@ -25,8 +25,7 @@ impl CoinRepository for PostgresCoinRepository {
                 .values(new_coin)
                 .get_result::<Coin>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -35,11 +34,7 @@ impl CoinRepository for PostgresCoinRepository {
         conn.interact(|conn| {
             coin::table.load::<Coin>(conn)
         })
-        .await
-        .map_err(|e| {
-            tracing::error!("Error executing query: {:?}", e);
-            Error::from(adapt_db_error(e))
-        })?
+        .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
@@ -50,12 +45,8 @@ impl CoinRepository for PostgresCoinRepository {
                 .find(coin_id)
                 .get_result::<Coin>(conn)
         })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
-        .map_err(|e| {
-            tracing::error!("Error executing query: {:?}", e);
-            Error::from(adapt_db_error(e))
-    })
+        .await?
+        .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
 }

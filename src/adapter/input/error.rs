@@ -2,7 +2,7 @@ use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
 use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::{adapter::output::persistence::db, domain::model, usecase};
+use crate::{adapter::output::{self, near, persistence::db}, usecase};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -10,8 +10,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Clone, Debug, Serialize, strum_macros::AsRefStr)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
-	InputInvalid { field: String, message: String },
-	
 	// -- Mock Login Errors.
     LoginFail,
 
@@ -20,27 +18,18 @@ pub enum Error {
     AuthFailTokenWrongFormat,
     AuthFailCtxNotInRequestExt,
 
-	// -- Model Errors.
+	// -- Mock Errors
 	UserNicknameNotFound { nickname: String },
-	CoinNetworkIdNotFound { id: String },
-	RewardClaimDuplicate { mission_id: String, user_id: String },
-	InvalidClaimStatusForReject,
-	InvalidClaimStatusForApprove,
 
-	// -- Domain
-	Model(model::Error),
-
-	// -- Database
-    DatabaseError(db::DbError),
+	// -- Request Params
+	UUIDParsingError { message: String },
+	
+	// -- Output
+	Postgres(db::error::Error),
+	Near(near::error::Error),
 
 	// -- Usecase 
-	UsecaseError(usecase::error::Error),
-
-	// -- Deserialization
-	DeserializationError { message: String },
-
-	// -- Near 
-	TxError { message: String },
+	Usecase(usecase::error::Error),
 }
 
 // region:    --- Error Boilerplate
@@ -66,10 +55,10 @@ impl IntoResponse for Error {
 	fn into_response(self) -> Response {
 		tracing::debug!("[into_response] - {self:?}");
 
-		let (status, client_error) = self.client_status_and_error();
+		let (status, client_error_message) = self.client_status_and_error();
         let error_response = ErrorResponse {
-            error: client_error.as_ref().to_string(),
-            message: self.to_string(),
+            error: self.to_string(),
+            message: client_error_message.to_string(),
         };
 
         (status, Json(error_response)).into_response()
@@ -77,55 +66,80 @@ impl IntoResponse for Error {
 }
 
 impl Error {
-	pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
+	pub fn client_status_and_error(&self) -> (StatusCode, String) {
 		#[allow(unreachable_patterns)]
 		match self {
-			Self::LoginFail => (StatusCode::FORBIDDEN, ClientError::LOGIN_FAIL),
-
-			// -- Mock Auth.
+			// -- Mock 
+			Self::LoginFail => (StatusCode::FORBIDDEN, "Login Failed".to_string()),
 			Self::AuthFailNoAuthTokenCookie
 			| Self::AuthFailTokenWrongFormat
 			| Self::AuthFailCtxNotInRequestExt => {
-				(StatusCode::FORBIDDEN, ClientError::NO_AUTH)
+				(StatusCode::FORBIDDEN, "No Auth".to_string())
+			}
+			Self::UserNicknameNotFound { .. } => {
+				(StatusCode::BAD_REQUEST, "User Nickname Not Found,".to_string())
 			}
 
-			// -- Model.
-			Self::UserNicknameNotFound { .. }
-			| Self::CoinNetworkIdNotFound { .. } => {
-				(StatusCode::BAD_REQUEST, ClientError::INVALID_PARAMS)
-			}
+			// -- Request Params
+			Self::UUIDParsingError { message } => (
+				StatusCode::BAD_REQUEST,
+				message.to_string(),
+			),
 
-			 // -- Deserialization.
-			Self::DeserializationError { .. } => {
-                (StatusCode::UNPROCESSABLE_ENTITY, ClientError::INVALID_PARAMS)
-            }
+			// -- Output
+			Self::Postgres { .. } => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				"Postgres Error".to_string(),
+			),
+
+			Self::Near(near::error::Error::TransactionNotExecuted { message }) => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				message.to_string(),
+			),
+
+			// -- Usecase
+			Self::Usecase(usecase::error::Error::InvalidClaimStatusForReject) => (
+				StatusCode::BAD_REQUEST,
+				"Invalid Claim Status For Reject".to_string(),
+			),
+			Self::Usecase(usecase::error::Error::InvalidClaimStatusForApprove) => (
+				StatusCode::BAD_REQUEST,
+				"Invalid Claim Status For Approve".to_string(),
+			),
+			Self::Usecase(usecase::error::Error::CoinNetworkIdNotFound { id }) => (
+				StatusCode::NOT_FOUND,
+				format!("Coin Network Id Not Found: {}", id)
+			),
+			Self::Usecase(usecase::error::Error::RewardClaimDuplicate { mission_id, user_id }) => (
+				StatusCode::BAD_REQUEST,
+				format!("Reward Claim Duplicate: Mission Id: {}, User Id: {}", mission_id, user_id)
+			),
+			Self::Usecase(usecase::error::Error::InvalidEncodedSignedDelegateDeserialization { message }) => (
+				StatusCode::BAD_REQUEST,
+				message.to_string(),
+			),
+			Self::Usecase(usecase::error::Error::InternalServerError { message }) => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				message.to_string(),
+			),
 
 			// -- Fallback.
 			_ => (
 				StatusCode::INTERNAL_SERVER_ERROR,
-				ClientError::SERVICE_ERROR,
+				"Unknown Error".to_string(),
 			),
 		}
 	}
 }
 
-impl From<model::Error> for Error {
-    fn from(error: model::Error) -> Self {
-        Self::Model(error)
-    }
-}
-
 impl From<usecase::error::Error> for Error {
     fn from(error: usecase::error::Error) -> Self {
-        Self::UsecaseError(error)
+        Self::Usecase(error)
     }
 }
 
-#[derive(Debug, strum_macros::AsRefStr)]
-#[allow(non_camel_case_types)]
-pub enum ClientError {
-	LOGIN_FAIL,
-	NO_AUTH,
-	INVALID_PARAMS,
-	SERVICE_ERROR,
+impl From<output::persistence::db::error::Error> for Error {
+	fn from(error: output::persistence::db::error::Error) -> Self {
+		Self::Postgres(error)
+	}
 }
