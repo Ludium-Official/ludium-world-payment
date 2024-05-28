@@ -58,7 +58,7 @@ async fn main() -> Result<()>{
         .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))
         .route_layer(middleware::from_fn(auth::mw_require_auth));
     
-    // TODO: Add a middleware to resolve the context
+    // TODO: Add a middleware to resolve the context real value
     let ctx = Ctx::new(0);
 
     let routes_all: Router = Router::new()
