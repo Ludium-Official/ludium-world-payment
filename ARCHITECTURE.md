@@ -3,7 +3,8 @@
 
 ## Inside World
 ### Domain(Entity)
-hexagonal 아키텍처의 중심은 애플리케이션의 비즈니스 로직과 규칙을 포함하는 도메인 계층이 있다. 이 계층은 응집력이 높고 외부 시스템이나 프레임워크와 독립적이다. 순수한 비즈니스 로직을 포함하며 비즈니스 요구사항과 관련된 변경만 허용한다.
+At the core of the hexagonal architecture is the domain layer, which contains the application's business logic and rules. This layer is highly cohesive and independent of external systems or frameworks. It contains pure business logic and only allows changes related to business requirements.
+
 
 ```rust
 // Example of a Domain entity 
@@ -24,7 +25,7 @@ pub enum PaymentStatus {
 ```
 
 ### Usecase
-Usecase 계층은 Domain이 수행할 수 있는 작업을 추상화한다. Domain 및 외부 레이어(Adapter, Port)와의 데이터 흐름을 조정한다. 
+The Usecase layer handles what a Domain can do. It coordinates the flow of data to and from the Domain and external layers (Adapter, Port). 
 
 ```rust 
 // Example of a Usecase in Rust
@@ -41,10 +42,10 @@ impl ProcessPayment {
 
 ## Outside World
 ### Port
-도메인이 외부 세계와 상호 작용하는 방식을 정의하는 인터페이스 또는 추상화 레이어이다. 외부와의 모든 통신은 Port를 통해 이루어진다. 어떻게 외부 시스템과 상호작용하냐에 따라서 Input, Output으로 구분한다. 
+n interface or abstraction layer that defines how a domain interacts with the outside world. All communication with the outside world is done through Ports. Depending on how they interact with external systems, they are categorized into Inputs and Outputs. 
 
 #### Input
-Input은 API 요청이나 CLI와 같이 시스템 내부로 들어오는 외부 시스템과의 송수신하는 역할을 한다. 
+Inputs are external systems coming into the system, such as API requests or the CLI. 
 ```rust
 // Input Port (like CQRS pattern)
 #[async_trait]
@@ -54,7 +55,7 @@ pub trait PaymentCommand {
 ```
 
 #### Output
-Output은 DB나 이벤트 메시징 시스템과 같이 외부 시스템과 상호작용하는 역할을 한다. 
+Output serves to interact with external systems, such as a DB or event messaging system. 
 ```rust
 // Output Port
 #[async_trait]
@@ -63,16 +64,16 @@ pub trait PaymentRepository {
 }
 ```
 
-입력 쪽은 결제 시스템으로 들어오는 외부 상호작용을 처리합니다. 여기에는 API 호출 또는 명령 수신이 포함됩니다.
+The input side handles the external interactions that come into the payment system. This includes receiving API calls or commands.
 
 ### Adapter
-Adapter는 Port의 구현체이다. 외부 시스템의 데이터와 요청을 Domain이 이해하고 처리할 수 있는 형태로 변환한다.
+An Adapter is an implementation of a Port. It converts data and requests from external systems into a form that Domain can understand and process.
 
 ```rust
 // Input Adapter 
 impl PaymentCommand for PaymentCommandImpl {
         async fn create_payment(&self, create_payment_payload: CreatePaymentPayload) -> Result<PaymentResponse> {
-        // 추상화된 Domain 구현체(usecase)를 통해 데이터를 처리하는 로직
+        // Logic to process data through abstracted Domain implementations (usecase)
 
         Ok(Json(paymentResponse))
     }
@@ -84,7 +85,7 @@ impl PaymentCommand for PaymentCommandImpl {
 #[async_trait]
 impl PaymentRepository for PaymentRepositoryImpl {
     async fn save(&self, create_payment_payload: CreatePaymentPayload) -> Result<PaymentResponse> {
-        // DB에 payment를 저장하는 로직 
+        // Logic for saving payment's data in the DB 
 
         Ok(Json(paymentResponse))
     }
