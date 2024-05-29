@@ -69,7 +69,10 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         status: RewardClaimStatus) -> Result<RewardClaim> {
         conn.interact(move |conn| {
             diesel::update(reward_claim::table.find(reward_claim_id))
-                .set(reward_claim::reward_claim_status.eq(status))
+                .set((
+                    reward_claim::reward_claim_status.eq(status),
+                    reward_claim::updated_date.eq(diesel::dsl::now),
+                ))
                 .get_result::<RewardClaim>(conn)
         })
         .await?

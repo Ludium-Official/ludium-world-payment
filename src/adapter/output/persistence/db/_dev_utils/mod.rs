@@ -1,16 +1,9 @@
-// region:    --- Modules
-
 mod dev_db;
 
 use tokio::sync::OnceCell;
 use tracing::info;
-
 use crate::config::config;
-
 use super::postgres::PostgresDbManager;
-
-
-// endregion: --- Modules
 
 /// Initialize environment for local development.
 /// (for early development, will be called from main()).

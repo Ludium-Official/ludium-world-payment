@@ -4,7 +4,6 @@ use anyhow::Result;
 use serde_json::json;
 use tokio::fs;
 
-#[ignore]
 #[tokio::test]
 async fn quick_dev() -> Result<()> {
     let hc = httpc_test::new_client("http://localhost:8090")?;
@@ -29,6 +28,7 @@ async fn quick_dev() -> Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[tokio::test]
 async fn quick_dev2() -> Result<()> {
     let hc = httpc_test::new_client("http://localhost:8090")?;

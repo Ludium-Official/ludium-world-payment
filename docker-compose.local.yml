@@ -1,0 +1,27 @@
+services:
+  app: 
+    build: .
+    env_file:
+      - .env.local
+    ports:
+      - 8090:8090
+    volumes:
+      - ./config.toml:/payment-app/config.toml
+      - ./account_keys:/payment-app/account_keys
+      - ./scripts:/payment-app/scripts
+    depends_on:
+      - ludium-local-db
+
+  ludium-local-db:
+    container_name: ludium-local-db
+    image: postgres:14
+    env_file:
+      - .env.local
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  pgdata: {}

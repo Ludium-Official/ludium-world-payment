@@ -69,9 +69,11 @@ async fn init_config() -> Config {
         rpc_api_key: env::var("NEAR_RPC_API_KEY").ok().map(|key| key.parse().unwrap()),
     };
 
-    if run_mode == "development" {
+    if run_mode == "development" || run_mode == "local" {
         // NOTE: Hardcode to prevent deployed system db update.
-        let admin_database_url = "postgres://postgres:postgres@localhost:5432/postgres";
+        let pg_host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let pg_port = env::var("POSTGRES_PORT").unwrap_or_else(|_| "5432".to_string());
+        let admin_database_url = format!("postgres://postgres:postgres@{}:{}/postgres", pg_host, pg_port);  
         _dev_utils::init_dev(&database_config.url, &admin_database_url).await;
     }
 
