@@ -53,23 +53,14 @@ To run the tests with hot-reloading:
 cargo watch -q -c -w tests/ -x "test -q quick_dev2 -- --nocapture"
 ```
 
-## Local Development
-### quick dev
+### local test 
 ```
-# run server with hotreload
-cargo watch -q -c -w src/ -x run 
-
-# run quickdev with hotreload
-cargo watch -q -c -w tests/ -x  "test -q quick_dev2 -- --nocapture"
+cargo test
 ```
 
-### local db 
-```
-# db setting
-docker-compose -f ./docker-compose.localdb.yml up -d
-```
 
-if you want to set a new db table. you hvae to print db schema file
+### db schema update (FYI)
+if you want to set a new db table. you have to print db schema file
 > Note: The payment system does not use `disel migration` directly. You can configure and use Diesel migrations if needed. Currently, in development, running `scripts/dev_initial` will automatically set up the database with mock data.
 
 ```sh
@@ -79,11 +70,6 @@ diesel print-schema --database-url=postgres://postgres:postgres@localhost:5432/l
 
 ### MultipleKey Generation for On-chain Relayer signer
 check the [near/pagoda-relayer-rs readme](https://github.com/near/pagoda-relayer-rs#:~:text=Multiple%20Key%20Generation%20%2D%20OPTIONAL%2C%20but%20recommended%20for%20high%20throughput%20to%20prevent%20nonce%20race%20conditions)
-
-### local test 
-```
-cargo test
-```
 
 
 ## Deployment
