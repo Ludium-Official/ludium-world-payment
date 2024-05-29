@@ -39,13 +39,6 @@ use ::config::{Config, File as ConfigFile};
 use once_cell::sync::Lazy;
 use near_crypto::InMemorySigner;
 
-static LOCAL_CONF: Lazy<Config> = Lazy::new(|| {
-    Config::builder()
-        .add_source(ConfigFile::with_name("config.toml"))
-        .build()
-        .unwrap()
-});
-
 #[tokio::main]
 async fn main() -> Result<()>{
     log::init_tracing();

@@ -2,29 +2,33 @@ pub mod log;
 pub mod near;
 
 use std::env;
+use config::File;
 use dotenvy::dotenv;
+use near_fetch::signer::KeyRotatingSigner;
 use tokio::sync::OnceCell;
-
 use crate::adapter::output::persistence::db::_dev_utils;
-use self::near::NearNetworkConfig;
+use self::near::{KeyRotatingSignerWrapper, NearNetworkConfig};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ServerConfig {
     host: String,
     port: u16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct DatabaseConfig {
     url: String,
 }
 
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 pub struct Config {
     server: ServerConfig,
     db: DatabaseConfig,
-    pub(crate) near_network_config: NearNetworkConfig
+    signer: KeyRotatingSignerWrapper,
+    near_network_config: NearNetworkConfig,
 }
+
 
 impl Config {
     pub fn db_url(&self) -> &str {
@@ -38,17 +42,23 @@ impl Config {
     pub fn server_port(&self) -> u16 {
         self.server.port
     }
+
+    pub fn get_signer(&self) -> KeyRotatingSignerWrapper {
+        self.signer.clone()
+    }
+
+    pub fn get_near_network_config(&self) -> NearNetworkConfig {
+        self.near_network_config.clone()
+    }
 }
 
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
 async fn init_config() -> Config {
     dotenv().ok();
-
     let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "development".to_string());
     let env_file = format!(".env.{}", run_mode);
     dotenvy::from_filename(&env_file).ok();
-
     tracing::info!("RUN_MODE: {}", run_mode);
 
     let server_config = ServerConfig {
@@ -64,10 +74,8 @@ async fn init_config() -> Config {
         url: env::var(databse_url_key).expect("DATABASE_URL must be set"),
     };
 
-    let near_network_config = NearNetworkConfig {
-        rpc_url: url::Url::parse(&env::var("NEAR_RPC_URL").expect("RPC_URL must be set")).unwrap(),
-        rpc_api_key: env::var("NEAR_RPC_API_KEY").ok().map(|key| key.parse().unwrap()),
-    };
+    let near_network_config = NearNetworkConfig::init();
+    let signer = near_network_config.init_rotating_signer();
 
     if run_mode == "development" || run_mode == "local" {
         // NOTE: Hardcode to prevent deployed system db update.
@@ -80,7 +88,8 @@ async fn init_config() -> Config {
     Config {
         server: server_config,
         db: database_config,
-        near_network_config: near_network_config
+        signer,
+        near_network_config,
     }
 }
 

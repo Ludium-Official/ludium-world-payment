@@ -17,4 +17,6 @@ pub struct TransactionResultResponse {
     pub status: FinalExecutionStatus,
     pub receiver_id: AccountId,
     pub transaction_hash: CryptoHash,
+    pub has_errors: bool,
+    pub error_details: Vec<String>,
 }

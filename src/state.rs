@@ -14,6 +14,7 @@ use crate::adapter::input::error::Result;
 
 #[derive(Clone)]
 pub struct AppState {
+    pub config: Config,
     pub db_manager: Arc<PostgresDbManager>,
     pub user_repo: Arc<PostgresUserRepository>,
     pub coin_repo: Arc<PostgresCoinRepository>,
@@ -22,7 +23,7 @@ pub struct AppState {
     pub reward_claim_repo: Arc<PostgresRewardClaimRepository>,
     pub near_usecase: Arc<NearUsecaseImpl>,
     pub reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync>,
-    pub near_rpc_manager: Arc<NearRpcManager>, // todo: delete me! _dev_process_meta_tx use me 
+    pub near_rpc_manager: Arc<NearRpcManager>, 
 }
 
 impl AppState {
@@ -33,7 +34,12 @@ impl AppState {
         let network_repo = Arc::new(PostgresNetworkRepository);
         let coin_network_repo = Arc::new(PostgresCoinNetworkRepository);
         let reward_claim_repo = Arc::new(PostgresRewardClaimRepository);
-        let near_rpc_manager = Arc::new(NearRpcManager::new(config.near_network_config.rpc_client()));
+        let near_rpc_manager = Arc::new(NearRpcManager::new(
+            config.get_near_network_config().rpc_client(),
+            config.get_signer().clone(),
+            config.get_near_network_config().whitelisted_contracts.clone(),
+            config.get_near_network_config().whitelisted_senders.clone(),
+        ));
         let near_usecase = Arc::new(NearUsecaseImpl);
         let reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync> = Arc::new(RewardClaimUsecaseImpl::new(
             Arc::clone(&db_manager),
@@ -44,6 +50,7 @@ impl AppState {
         ));
 
         Ok(Self {
+            config: config.clone(),
             db_manager,
             user_repo,
             coin_repo,

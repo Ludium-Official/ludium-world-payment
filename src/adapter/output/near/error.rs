@@ -7,6 +7,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug, Serialize, Clone)]
 pub enum Error {
     TransactionNotExecuted { message: String },
+	NotWhitelisted { message: String },
 }
 
 impl core::fmt::Display for Error {
@@ -14,7 +15,14 @@ impl core::fmt::Display for Error {
 		&self,
 		fmt: &mut core::fmt::Formatter,
 	) -> core::result::Result<(), core::fmt::Error> {
-		write!(fmt, "{self:?}")
+		match self {
+			Self::TransactionNotExecuted { message } => {
+				write!(fmt, "TransactionNotExecuted: {message}")
+			}
+			Self::NotWhitelisted { message } => {
+				write!(fmt, "NotWhitelisted: {message}")
+			}
+		}
 	}
 }
 

@@ -4,6 +4,7 @@ use anyhow::Result;
 use serde_json::json;
 use tokio::fs;
 
+#[ignore]
 #[tokio::test]
 async fn quick_dev() -> Result<()> {
     let hc = httpc_test::new_client("http://localhost:8090")?;
@@ -28,7 +29,7 @@ async fn quick_dev() -> Result<()> {
     Ok(())
 }
 
-#[ignore]
+// #[ignore]
 #[tokio::test]
 async fn quick_dev2() -> Result<()> {
     let hc = httpc_test::new_client("http://localhost:8090")?;
@@ -88,7 +89,7 @@ async fn quick_dev2() -> Result<()> {
     let payload: serde_json::Value = serde_json::from_str(
         &fs::read_to_string("tests/data/approve_payload.json").await?
     )?;
-    hc.do_put("/api/reward_claims/3c4d5e6a-7a8b-9c0d-1e2a-3a41111d0000/approve", payload).await?.print().await?;
+    hc.do_put("/api/reward_claims/4d5e6f7a-8b9c-0d1e-2f3a-4a1234c6d000/approve", payload).await?.print().await?;
 
     Ok(())
 }

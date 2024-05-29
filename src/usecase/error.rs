@@ -21,6 +21,12 @@ pub enum Error {
     },
     InvalidClaimStatusForReject, 
     InvalidClaimStatusForApprove, 
+    TransactionActionFailed { 
+        message: String,
+    },
+    TransactionUnknownAction { 
+        message: String,
+    },
 
     // --- 500
     InternalServerError  { 

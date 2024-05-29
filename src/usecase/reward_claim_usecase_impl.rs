@@ -3,16 +3,13 @@ use async_trait::async_trait;
 use near_primitives::views::FinalExecutionStatus;
 use uuid::Uuid;
 use crate::{
-    usecase::near_usecase_impl,
-    domain::model::{
-        coin::Coin, coin_network::CoinNetwork, network::Network, reward_claim_detail::NewRewardClaimDetail,
-        reward_claim::{
+    config::Config, domain::model::{
+        coin::Coin, coin_network::CoinNetwork, network::Network, reward_claim::{
             CombinedRewardClaimResponse, NewRewardClaimPayload, RewardClaim, RewardClaimApprovePayload, RewardClaimApproveResponse, RewardClaimResponse, RewardClaimStatus
-        },
-    }, 
-    port::output::{
+        }, reward_claim_detail::NewRewardClaimDetail
+    }, port::output::{
         coin_network_repository::CoinNetworkRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager
-    }};
+    }, usecase::near_usecase_impl};
 use super::{error::{Error, Result}, utrait::near_usecase::NearUsecase};
 use super::utrait::reward_claim_usecase::RewardClaimUsecase;
 
@@ -136,7 +133,7 @@ where
                 detail.sended_user_address = tx_result.receiver_id.to_string();
 
                 let reward_claim_status: RewardClaimStatus;
-                if let FinalExecutionStatus::Failure(_) = tx_result.status {
+                if tx_result.has_errors {
                     reward_claim_status = RewardClaimStatus::TransactionFailed;
                 }else {
                     reward_claim_status = RewardClaimStatus::TransactionApproved;

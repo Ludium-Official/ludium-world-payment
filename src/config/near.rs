@@ -1,8 +1,9 @@
 use near_fetch::signer::KeyRotatingSigner;
 use once_cell::sync::Lazy;
 use near_crypto::InMemorySigner;
-use std::fmt::Debug;
-use crate::LOCAL_CONF;
+use serde::Deserialize;
+use std::{fmt::Debug, path::PathBuf};
+use ::config::{Config, File as ConfigFile};
 
 // region: --- ApiKey
 #[derive(Eq, Hash, Clone, Debug, PartialEq)]
@@ -50,13 +51,25 @@ impl<'de> serde::de::Deserialize<'de> for ApiKey {
 
 // endregion: --- ApiKey
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct NearNetworkConfig {
-    pub(crate) rpc_url: url::Url,
-    pub(crate) rpc_api_key: Option<ApiKey>,
+    rpc_url: url::Url,
+    rpc_api_key: Option<ApiKey>,
+    pub whitelisted_contracts: Vec<String>,
+    pub whitelisted_senders: Vec<String>,
+    keys_filename: PathBuf,
 }
 
 impl NearNetworkConfig {
+    pub fn init() -> Self {
+        Config::builder()
+            .add_source(ConfigFile::with_name("config.toml"))
+            .build()
+            .unwrap()
+            .try_deserialize::<NearNetworkConfig>()
+            .unwrap()
+    }
+
     pub fn rpc_client(&self) -> near_fetch::Client {
         near_fetch::Client::from_client(self.raw_rpc_client())
     }
@@ -69,18 +82,36 @@ impl NearNetworkConfig {
         };
         json_rpc_client
     }
+
+    pub fn init_rotating_signer(&self) -> KeyRotatingSignerWrapper {
+        let keys_file = std::fs::File::open(&self.keys_filename)
+            .expect("Failed to open keys file");
+        let signers: Vec<InMemorySigner> = serde_json::from_reader(keys_file)
+            .expect("Failed to parse keys file");
+
+        KeyRotatingSignerWrapper(KeyRotatingSigner::from_signers(signers))
+    }
 }
 
 
-// region: --- near signer setup
-pub static ROTATING_SIGNER: Lazy<KeyRotatingSigner> = Lazy::new(|| {
-    let path = LOCAL_CONF
-        .get::<String>("keys_filename")
-        .expect("Failed to read 'keys_filename' from config");
-    let keys_file = std::fs::File::open(path).expect("Failed to open keys file");
-    let signers: Vec<InMemorySigner> =
-        serde_json::from_reader(keys_file).expect("Failed to parse keys file");
+// region: --- KeyRotatingSignerWrapper
 
-    KeyRotatingSigner::from_signers(signers)
-});
-// endregion --- near signer setup
+#[derive(Clone)]
+pub struct KeyRotatingSignerWrapper(KeyRotatingSigner);
+
+impl Debug for KeyRotatingSignerWrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "KeyRotatingSignerWrapper(...)")
+    }
+}
+
+impl KeyRotatingSignerWrapper {
+    pub fn from_signers(signers: Vec<InMemorySigner>) -> Self {
+        KeyRotatingSignerWrapper(KeyRotatingSigner::from_signers(signers))
+    }
+
+    pub fn inner(&self) -> &KeyRotatingSigner {
+        &self.0
+    }
+}
+// endregion: --- KeyRotatingSignerWrapper

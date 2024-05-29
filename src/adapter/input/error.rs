@@ -45,23 +45,13 @@ impl core::fmt::Display for Error {
 impl std::error::Error for Error {}
 // endregion: --- Error Boilerplate
 
-#[derive(Serialize)]
-struct ErrorResponse {
-    error: String,
-    message: String,
-}
 
 impl IntoResponse for Error {
 	fn into_response(self) -> Response {
 		tracing::debug!("[into_response] - {self:?}");
 
 		let (status, client_error_message) = self.client_status_and_error();
-        let error_response = ErrorResponse {
-            error: self.to_string(),
-            message: client_error_message.to_string(),
-        };
-
-        (status, Json(error_response)).into_response()
+        (status, client_error_message.to_string()).into_response()
 	}
 }
 
@@ -83,7 +73,7 @@ impl Error {
 			// -- Request Params
 			Self::UUIDParsingError { message } => (
 				StatusCode::BAD_REQUEST,
-				message.to_string(),
+				message.clone(),
 			),
 
 			// -- Output
@@ -94,6 +84,10 @@ impl Error {
 
 			Self::Near(near::error::Error::TransactionNotExecuted { message }) => (
 				StatusCode::INTERNAL_SERVER_ERROR,
+				message.to_string(),
+			),
+			Self::Near(near::error::Error::NotWhitelisted { message }) => (
+				StatusCode::FORBIDDEN,
 				message.to_string(),
 			),
 

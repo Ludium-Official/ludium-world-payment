@@ -5,9 +5,30 @@
 # Please note this is for reference only and you should be updating the values in the `config.toml` file found in the `pagoda-relayer-rs` directory.
 
 # replace with the account id of the public key you will use to sign relay transactions - this should match the account_id in your json file
-relayer_account_id = "nomnomnom.testnet"
+# relayer_account_id = "nomnomnom.testnet"
+relayer_account_id = "won999.testnet"
+
+
 # this is a list of jsons from json key files containing 3 entries: account_id, public_key, secret_key
 # NOTE: If you copy/paste the json from the key files, you might need to change private_key to secret_key
 # NOTE: account_id for all keys used should match as they should be derived from the same account_id
 # this is recommended for high throughput use cases to prevent nonce race conditions
-keys_filename = "./account_keys/nomnomnom.testnet.json"
+keys_filename = "./account_keys/won999.testnet.json"
+
+## near network and rpc url
+near_network="testnet"
+rpc_url="https://rpc.testnet.near.org"
+
+# can interact with all contracts
+use_whitelisted_contracts = true
+# example of whitelisted contracts
+#   whitelisted_contracts = [
+#        "usdc.usd-coin.testnet",
+#        "usdt.tether-token.testnet",
+#    ]
+whitelisted_contracts = ["tt_local.testnet"]
+
+# can be sent from all users
+use_whitelisted_senders = true
+whitelisted_senders = ["nomnomnom.testnet", "relayer_test0.testnet", "relayer_test1.testnet", "won999.testnet"]
+
