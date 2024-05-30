@@ -41,23 +41,16 @@ cp .env.example .env.local
 docker-compose -f ./docker-compose.local.yml up -d
 ```
 
-### Running the Application 
-Start the application with hot-reloading for development:
+### For Development
+1. Start the application with hot-reloading for development:
 ```sh
 cargo watch -q -c -w src/ -x run
 ```
 
-### Running Tests
-To run the tests with hot-reloading:
+2. To run the tests with hot-reloading:
 ```sh
 cargo watch -q -c -w tests/ -x "test -q quick_dev2 -- --nocapture"
 ```
-
-### local test 
-```
-cargo test
-```
-
 
 ### db schema update (FYI)
 if you want to set a new db table. you have to print db schema file

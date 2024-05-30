@@ -17,7 +17,8 @@ pub async fn init_dev(database_url: &str, admin_database_url: &str) {
 	.await;
 }
 
-
+// test 
+#[allow(unused)]
 pub async fn init_test() -> PostgresDbManager {
 	static DB_MANAGER: OnceCell<PostgresDbManager> = OnceCell::const_new();
     let config = config().await;

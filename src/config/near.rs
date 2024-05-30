@@ -1,5 +1,4 @@
 use near_fetch::signer::KeyRotatingSigner;
-use once_cell::sync::Lazy;
 use near_crypto::InMemorySigner;
 use serde::Deserialize;
 use std::{fmt::Debug, path::PathBuf};
@@ -74,6 +73,7 @@ impl NearNetworkConfig {
         near_fetch::Client::from_client(self.raw_rpc_client())
     }
 
+    // TODO: more specific setting ref. near_core github
     pub fn raw_rpc_client(&self) -> near_jsonrpc_client::JsonRpcClient {
         let mut json_rpc_client =
             near_jsonrpc_client::JsonRpcClient::connect(self.rpc_url.as_ref());
@@ -89,7 +89,7 @@ impl NearNetworkConfig {
         let signers: Vec<InMemorySigner> = serde_json::from_reader(keys_file)
             .expect("Failed to parse keys file");
 
-        KeyRotatingSignerWrapper(KeyRotatingSigner::from_signers(signers))
+        KeyRotatingSignerWrapper::from_signers(signers)
     }
 }
 

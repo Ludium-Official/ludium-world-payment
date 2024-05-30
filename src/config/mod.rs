@@ -2,9 +2,7 @@ pub mod log;
 pub mod near;
 
 use std::env;
-use config::File;
 use dotenvy::dotenv;
-use near_fetch::signer::KeyRotatingSigner;
 use tokio::sync::OnceCell;
 use crate::adapter::output::persistence::db::_dev_utils;
 use self::near::{KeyRotatingSignerWrapper, NearNetworkConfig};

@@ -1,15 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 use async_trait::async_trait;
-use near_primitives::views::FinalExecutionStatus;
 use uuid::Uuid;
 use crate::{
-    config::Config, domain::model::{
+    domain::model::{
         coin::Coin, coin_network::CoinNetwork, network::Network, reward_claim::{
             CombinedRewardClaimResponse, NewRewardClaimPayload, RewardClaim, RewardClaimApprovePayload, RewardClaimApproveResponse, RewardClaimResponse, RewardClaimStatus
         }, reward_claim_detail::NewRewardClaimDetail
     }, port::output::{
         coin_network_repository::CoinNetworkRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager
-    }, usecase::near_usecase_impl};
+    }
+};
 use super::{error::{Error, Result}, utrait::near_usecase::NearUsecase};
 use super::utrait::reward_claim_usecase::RewardClaimUsecase;
 

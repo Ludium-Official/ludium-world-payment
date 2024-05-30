@@ -100,7 +100,7 @@ mod tests {
     use crate::adapter::output::persistence::db::postgres::network_repository_impl::PostgresNetworkRepository;
     use crate::adapter::output::persistence::db::postgres::PostgresDbManager;
     use crate::domain::model::coin::NewCoinPayload;
-    use crate::domain::model::coin_network::{NewCoinNetworkPayload, CoinNetwork};
+    use crate::domain::model::coin_network::NewCoinNetworkPayload;
     use crate::domain::model::network::NewNetworkPayload;
     use crate::port::output::coin_repository::CoinRepository;
     use crate::port::output::network_repository::NetworkRepository;

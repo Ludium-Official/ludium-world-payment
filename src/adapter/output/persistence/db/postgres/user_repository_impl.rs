@@ -4,7 +4,7 @@ use diesel::prelude::*;
 use uuid::Uuid;
 use crate::adapter::output::persistence::db::error::{Error, Result};
 use crate::domain::model::user::{NewUser, NewUserPayload, User};
-use crate::port::output::{db_manager::DbManager, UserRepository};
+use crate::port::output::UserRepository;
 
 use super::{adapt_db_error, tb_ldm_usr};
 
@@ -64,13 +64,13 @@ impl UserRepository for PostgresUserRepository {
     }
 }
 
+
+// region: --- user repository tests
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::adapter::output::persistence::db::_dev_utils;
-    use crate::domain::model::user::{NewUser, User};
-    use crate::port::output::UserRepository;
-    use uuid::Uuid;
+    use crate::port::output::{DbManager, UserRepository};
     use serial_test::serial;
 
     #[serial]
@@ -147,3 +147,5 @@ mod tests {
         Ok(())
     }
 }
+
+// endregion: --- user repository tests

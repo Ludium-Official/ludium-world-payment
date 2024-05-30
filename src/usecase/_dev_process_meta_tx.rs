@@ -1,19 +1,14 @@
-use std::future::Future;
 use std::sync::Arc;
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::Json;
-use near_primitives::action::delegate::DelegateAction;
 use near_primitives::action::Action;
 use near_primitives::borsh::BorshDeserialize;
 use near_primitives::types::AccountId;
 use near_primitives::{action::delegate::SignedDelegateAction, views::TxExecutionStatus};
 use near_primitives::views::{ExecutionStatusView, FinalExecutionOutcomeView, FinalExecutionStatus};
-use crate::domain::model::near::{TransactionResult, TransactionResultResponse};
+use crate::domain::model::near::TransactionResultResponse;
 use crate::AppState;
-use serde_json::json;
 use super::error::Error;
-use crate::config::near::KeyRotatingSignerWrapper;
 
 async fn relay(State(state): State<Arc<AppState>>, data: Json<Vec<u8>>) -> Result<Json<TransactionResultResponse>, Error> {
     tracing::debug!("[handler] relay");
@@ -172,11 +167,6 @@ async fn filter_and_send_signed_delegate_action(
         })?;
 
     let status = &execution.status;
-    let response_msg = match status {
-        FinalExecutionStatus::Failure(_) => "Error sending transaction",
-        _ => "Relayed and sent transaction",
-    };
-
     if let FinalExecutionStatus::Failure(_) = status {
         Err(Error::InternalServerError {
             message: "Fail Execution".to_string()
@@ -198,31 +188,27 @@ mod tests {
     use crate::adapter::output::persistence::db::postgres::coin_repository_impl::PostgresCoinRepository;
     use crate::adapter::output::persistence::db::postgres::network_repository_impl::PostgresNetworkRepository;
     use crate::adapter::output::persistence::db::postgres::reward_claim_repository_impl::PostgresRewardClaimRepository;
-    use crate::adapter::output::persistence::db::postgres::{user_repository_impl::PostgresUserRepository, PostgresDbManager};
+    use crate::adapter::output::persistence::db::postgres::user_repository_impl::PostgresUserRepository;
     use crate::config::config;
     use crate::usecase::near_usecase_impl::NearUsecaseImpl;
     use crate::usecase::reward_claim_usecase_impl::RewardClaimUsecaseImpl;
     use crate::usecase::utrait::reward_claim_usecase::RewardClaimUsecase;
 
-    use axum::response::Response;
-    use axum::{
-        extract::{Json, State},
-        http::StatusCode,
-    };
+    use axum::extract::{Json, State};
+    use serde_json::json;
     use std::str::FromStr;
 
     use near_crypto::KeyType::ED25519;
-    use near_crypto::{InMemorySigner, PublicKey, SecretKey, Signature, Signer};
+    use near_crypto::{InMemorySigner, PublicKey, SecretKey};
 
-    use near_primitives::account::{AccessKey, AccessKeyPermission};
     use near_primitives::action::delegate::{
         DelegateAction, NonDelegateAction, SignedDelegateAction,
     };
     use near_primitives::borsh;
     use near_primitives::signable_message::{SignableMessage, SignableMessageType};
-    use near_primitives::transaction::{Action, AddKeyAction, FunctionCallAction, TransferAction};
+    use near_primitives::transaction::{Action, FunctionCallAction, TransferAction};
     use near_primitives::types::Balance;
-    use near_primitives::types::{BlockHeight, Nonce};
+    use near_primitives::types::BlockHeight;
 
     async fn create_app_state() -> AppState {
         let config = config().await;
@@ -352,14 +338,10 @@ mod tests {
         actions: Option<Vec<Action>>,
         nonce: Option<u64>,
     ) -> SignedDelegateAction {
-        // let mut sender_account_id: AccountId = "nomnomnom.testnet".parse().unwrap();
-        // let public_key: PublicKey =
-        //     PublicKey::from_str("ed25519:89GtfFzez3opomVpwa7i4m3nptHtc7Ha514XHMWszQtL").unwrap();
-        // let secret_key: SecretKey = SecretKey::from_str("ed25519:WYuyKVQHE3rJQYRC3pRGV56o1qEtA1PnMYPDEtroc5kX4A4mWrJwF7XkzGe7JWNMABbtY4XFDBJEzgLyfPkwCzp").unwrap();
-        let mut sender_account_id: AccountId = "won999.testnet".parse().unwrap();
+        let mut sender_account_id: AccountId = "nomnomnom.testnet".parse().unwrap();
         let public_key: PublicKey =
-            PublicKey::from_str("ed25519:FGZufKaPZRxNZfYPFDrcbLAa4c6PPuUugZ1swTEN45wJ").unwrap();
-        let secret_key: SecretKey = SecretKey::from_str("ed25519:5hKPCXxBUqKV5sWumHYjz1RondnW74vYccH1xZjpZaAtFGYWfSh3zvkUqYqMmX6FhsNr18ZwBkVtcdPW8AdJCYuS").unwrap();
+            PublicKey::from_str("ed25519:89GtfFzez3opomVpwa7i4m3nptHtc7Ha514XHMWszQtL").unwrap();
+        let secret_key: SecretKey = SecretKey::from_str("ed25519:WYuyKVQHE3rJQYRC3pRGV56o1qEtA1PnMYPDEtroc5kX4A4mWrJwF7XkzGe7JWNMABbtY4XFDBJEzgLyfPkwCzp").unwrap();
 
         let signer = InMemorySigner{
             account_id: sender_account_id.clone(), public_key: public_key.clone(), secret_key: secret_key};
@@ -392,25 +374,21 @@ mod tests {
         }
     }
 
-    // #[ignore]
+    #[ignore]
     #[tokio::test]
     async fn test_usdc_transfer()  {
         let app_state = create_app_state().await;
         let axum_state: State<Arc<AppState>> = convert_app_state_to_arc_app_state(app_state);
-        // let account_id: AccountId = "nomnomnom.testnet".parse().unwrap();
-        // let public_key: PublicKey =
-        //     PublicKey::from_str("ed25519:89GtfFzez3opomVpwa7i4m3nptHtc7Ha514XHMWszQtL").unwrap();
-
-        let account_id: AccountId = "won999.testnet".parse().unwrap();
+        let account_id: AccountId = "nomnomnom.testnet".parse().unwrap();
         let public_key: PublicKey =
-            PublicKey::from_str("ed25519:FGZufKaPZRxNZfYPFDrcbLAa4c6PPuUugZ1swTEN45wJ").unwrap();
+            PublicKey::from_str("ed25519:89GtfFzez3opomVpwa7i4m3nptHtc7Ha514XHMWszQtL").unwrap();
 
         // Parameters for USDC transfer
         let usdc_contract_id = "tt_local.testnet";
         // let amount: u128 = 5 * 10u128.pow(2); //  0.0005 USDT, assuming USDC has 6 decimal places
 
         let amount: u128 = 5 * 10u128.pow(6); //  500 USDT, assuming USDC has 6 decimal places
-        let mut receiver_id: AccountId = "nomnomnom.testnet".parse().unwrap();
+        let mut receiver_id: AccountId = "won999.testnet".parse().unwrap();
         
         let args: serde_json::Value = json!({
             "receiver_id": receiver_id.to_string(),

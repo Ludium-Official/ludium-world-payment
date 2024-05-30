@@ -8,36 +8,19 @@ mod usecase;
 mod state; 
 
 use std::sync::Arc;
-use adapter::{input::ctx::Ctx, output::persistence::db::postgres::{user_repository_impl::PostgresUserRepository, PostgresDbManager}};
+use adapter::input::ctx::Ctx;
 use axum::{middleware, Extension, Router};
 use state::AppState;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
-use usecase::near_usecase_impl::NearUsecaseImpl;
 use crate::{
-    adapter::{
-        input::{
-            routes_static, 
-            web::{self, middleware::{auth, response}, routes_hello, _dev_routes_login}
-        }, 
-        output::{
-            near::rpc_client::NearRpcManager, 
-            persistence::db::postgres::{
-                coin_network_repository_impl::PostgresCoinNetworkRepository, 
-                coin_repository_impl::PostgresCoinRepository, 
-                network_repository_impl::PostgresNetworkRepository, 
-                reward_claim_repository_impl::PostgresRewardClaimRepository
-            }
-        }
+    adapter::input::{
+        routes_static, 
+        web::{self, middleware::{auth, response}, routes_hello, _dev_routes_login}
     }, 
-    config::{config, log::{self}}, usecase::{reward_claim_usecase_impl::RewardClaimUsecaseImpl, utrait::reward_claim_usecase::RewardClaimUsecase}
+    config::{config, log::{self}},
 };
 pub use self::adapter::input::error::Result;
-
-use near_fetch::signer::KeyRotatingSigner;
-use ::config::{Config, File as ConfigFile};
-use once_cell::sync::Lazy;
-use near_crypto::InMemorySigner;
 
 #[tokio::main]
 async fn main() -> Result<()>{

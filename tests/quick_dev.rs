@@ -29,7 +29,7 @@ async fn quick_dev() -> Result<()> {
     Ok(())
 }
 
-// #[ignore]
+#[ignore]
 #[tokio::test]
 async fn quick_dev2() -> Result<()> {
     let hc = httpc_test::new_client("http://localhost:8090")?;

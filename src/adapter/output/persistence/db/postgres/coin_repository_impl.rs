@@ -52,14 +52,14 @@ impl CoinRepository for PostgresCoinRepository {
 }
 
 // region: --- coin repository tests 
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::adapter::output::persistence::db::_dev_utils;
-    use crate::domain::model::coin::{NewCoin, CoinType, Coin};
+    use crate::domain::model::coin::CoinType;
     use crate::port::output::coin_repository::CoinRepository;
     use crate::port::output::DbManager;
-    use uuid::Uuid;
     use serial_test::serial;
 
     #[serial]

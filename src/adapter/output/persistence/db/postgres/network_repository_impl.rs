@@ -46,11 +46,11 @@ impl NetworkRepository for PostgresNetworkRepository {
 }
 
 // region: --- network repository tests 
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::adapter::output::persistence::db::_dev_utils;
-    use crate::domain::model::network::{NewNetwork, Network};
     use crate::port::output::network_repository::NetworkRepository;
     use crate::port::output::DbManager;
     use uuid::Uuid;

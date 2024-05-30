@@ -36,7 +36,8 @@ pub fn init_tracing() {
         .with(filter)
         .init();
 }
-    
+
+// todo: logging details
 pub fn request_logging_middleware() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>, impl Fn(&Request<Body>) -> tracing::Span + Clone, impl Fn(&Request<Body>, &tracing::Span) + Clone, impl Fn(&Response, Duration, &tracing::Span) + Clone> {
     TraceLayer::new_for_http()
         .make_span_with(|request: &Request<Body>| {
