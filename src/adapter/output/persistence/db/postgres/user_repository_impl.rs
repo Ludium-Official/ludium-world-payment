@@ -31,29 +31,6 @@ impl UserRepository for PostgresUserRepository {
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
-    async fn get(&self, conn: Object, user_id: Uuid) -> Result<User> {
-        conn.interact(move |conn| {
-            tb_ldm_usr::table
-                .find(user_id)
-                .get_result::<User>(conn)
-        })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
-        .map_err(|e| Error::from(adapt_db_error(e)))
-    }
-
-    async fn first_by_nick(&self, conn: Object, user_nick: String) -> Result<Option<User>> {
-        conn.interact(move |conn| {
-            tb_ldm_usr::table
-                .filter(tb_ldm_usr::nick.eq(user_nick))
-                .first::<User>(conn)
-                .optional()
-        })
-        .await
-        .map_err(|e| Error::from(adapt_db_error(e)))?
-        .map_err(|e| Error::from(adapt_db_error(e)))
-    }
-
     async fn list(&self, conn: Object) -> Result<Vec<User>> {
         conn.interact(|conn| {
             tb_ldm_usr::table.load::<User>(conn)
@@ -72,50 +49,6 @@ mod tests {
     use crate::adapter::output::persistence::db::_dev_utils;
     use crate::port::output::{DbManager, UserRepository};
     use serial_test::serial;
-
-    #[serial]
-    #[tokio::test]
-    async fn test_insert_and_get_user() -> Result<()> {
-        let db_manager = _dev_utils::init_test().await;
-        let user_repo = PostgresUserRepository;
-
-        let new_user_payload = NewUserPayload {
-            nick: "test_nick".to_string(),
-            self_intro: "Hello, I am a test user".to_string(),
-            phn_nmb: "123456789".to_string(),
-        };
-
-        let inserted_user = user_repo.insert(db_manager.get_connection().await?, new_user_payload.clone()).await?;
-        assert_eq!(inserted_user.nick, new_user_payload.nick);
-
-        let fetched_user = user_repo.get(db_manager.get_connection().await?, inserted_user.id).await?;
-        assert_eq!(fetched_user.id, inserted_user.id);
-        assert_eq!(fetched_user.nick, inserted_user.nick);
-
-        Ok(())
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_first_by_nick() -> Result<()> {
-        let db_manager = _dev_utils::init_test().await;
-        let user_repo = PostgresUserRepository;
-
-        let new_user_payload = NewUserPayload {
-            nick: "unique_nick".to_string(),
-            self_intro: "Hello, I am a test user".to_string(),
-            phn_nmb: "123456789".to_string(),
-        };
-
-        let inserted_user = user_repo.insert(db_manager.get_connection().await?, new_user_payload.clone()).await?;
-        assert_eq!(inserted_user.nick, new_user_payload.nick);
-
-        let fetched_user = user_repo.first_by_nick(db_manager.get_connection().await?, new_user_payload.nick.clone()).await?;
-        assert!(fetched_user.is_some());
-        assert_eq!(fetched_user.unwrap().nick, new_user_payload.nick);
-
-        Ok(())
-    }
 
     #[serial]
     #[tokio::test]

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use axum::extract::State;
-use axum::{Router, Json, Extension, extract::Path, routing::get};
+use axum::{Router, Json, extract::Path, routing::get};
 use crate::adapter::input::ctx::Ctx;
 use crate::domain::model::coin::{CoinResponse, NewCoinPayload};
 use crate::domain::model::coin_network::CoinNetworkResponse;
@@ -22,11 +22,9 @@ pub fn routes(state: Arc<AppState>) -> Router {
 #[allow(unused)]
 async fn create_coin(
 	State(state): State<Arc<AppState>>,
-	Extension(ctx): Extension<Ctx>,
+    _ctx: Ctx,
 	Json(new_coin_payload): Json<NewCoinPayload>,
 ) -> Result<Json<CoinResponse>> {
-	tracing::debug!("[handler] create_coin {:?}", ctx);
-
 	let coin = state.coin_repo.insert(
         state.db_manager.get_connection().await?,
         new_coin_payload,
@@ -37,10 +35,8 @@ async fn create_coin(
 
 async fn list_coins(
     State(state): State<Arc<AppState>>,
-	Extension(ctx): Extension<Ctx>,
+    _ctx: Ctx,
 ) -> Result<Json<Vec<CoinResponse>>> {
-    tracing::debug!("[handler] list_coins");
-
     let coins = state
         .coin_repo
         .list(state.db_manager.get_connection().await?)
@@ -50,11 +46,9 @@ async fn list_coins(
 
 async fn get_coin(
     State(state): State<Arc<AppState>>,
-	Extension(ctx): Extension<Ctx>,
+    _ctx: Ctx,
     Path(id): Path<String>
 ) -> Result<Json<CoinResponse>> {
-    tracing::debug!("[handler] get_coin");
-
     let id = Uuid::parse_str(&id).map_err(|_| Error::UUIDParsingError{ message: format!("Invalid UUID: {}", id)})?;
     let coin = state
         .coin_repo
@@ -67,12 +61,9 @@ async fn get_coin(
 
 async fn get_coin_networks_by_coin_id(
     State(state): State<Arc<AppState>>,
-    Extension(ctx): Extension<Ctx>,
+    _ctx: Ctx,
     Path(id): Path<String>
 ) -> Result<Json<Vec<CoinNetworkResponse>>> {
-    tracing::debug!("[handler] get_coin_networks_by_coin_id");
-
-    
     let id = Uuid::parse_str(&id).map_err(|_| Error::UUIDParsingError{ message: format!("Invalid UUID: {}", id)})?;
     let coin_networks = state
         .coin_network_repo

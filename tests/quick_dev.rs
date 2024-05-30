@@ -1,13 +1,47 @@
-#![allow(unused)] // For beginning only.
+// #![allow(unused)] // For beginning only.
 
 use anyhow::Result;
 use serde_json::json;
 use tokio::fs;
+use reqwest::header::{HeaderMap, HeaderValue};
+
+fn create_headers(header_type: &str,
+) -> HeaderMap {
+    let x_user_right_value = match header_type {
+        "admin" => json!({
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "adm":true,"prv":true,"crt":true
+        }),
+        "provider" => json!({
+            "user_id": "00000000-0000-0000-0000-000000000002",
+            "adm":false,"prv":true,"crt":true
+        }),
+        "contributor" => json!({
+            "user_id": "00000000-0000-0000-0000-000000000003",
+            "adm":false,"prv":false,"crt":true
+        }),
+        _ => json!({
+            "user_id": "00000000-0000-0000-0000-000000000003",
+            "adm":false,"prv":false,"crt":true
+        }),
+    };
+
+    let mut headers = HeaderMap::new();
+    headers.insert("x-user-right", HeaderValue::from_str(&x_user_right_value.to_string()).unwrap());
+    headers
+}
 
 #[ignore]
 #[tokio::test]
 async fn quick_dev() -> Result<()> {
-    let hc = httpc_test::new_client("http://localhost:8090")?;
+    let headers = create_headers("provider");
+    let client = reqwest::Client::builder()
+        .default_headers(headers);
+    
+    let hc = httpc_test::new_client_with_reqwest(
+        "http://localhost:8090",
+        client
+    )?;
 
     hc.do_get("/hello").await?.print().await?;
 
@@ -17,22 +51,30 @@ async fn quick_dev() -> Result<()> {
         "password": "welcome"
     })).await?.print().await?;
 
-    // user 
-    hc.do_post("/api/users", json!({
-            "nick": "quick_user_1",
-            "self_intro": "hello! i'm quick_user_1",
-            "phn_nmb": "010-1112-6672"
-        })).await?.print().await?;
+    // // user 
+    // hc.do_post("/api/users", json!({
+    //         "nick": "quick_user_1",
+    //         "self_intro": "hello! i'm quick_user_1",
+    //         "phn_nmb": "010-1112-6672"
+    //     })).await?.print().await?;
     hc.do_get("/api/users").await?.print().await?;
-    hc.do_get("/api/users/quick_user_1").await?.print().await?;
-
+    // hc.do_get("/api/users/quick_user_1").await?.print().await?;
+    hc.do_get("/api/coins").await?.print().await?;
     Ok(())
 }
 
 #[ignore]
 #[tokio::test]
-async fn quick_dev2() -> Result<()> {
-    let hc = httpc_test::new_client("http://localhost:8090")?;
+async fn quick_reward() -> Result<()> {
+    let headers = create_headers("admin");
+    let client = reqwest::Client::builder()
+        .default_headers(headers);
+    
+    let hc = httpc_test::new_client_with_reqwest(
+        "http://localhost:8090",
+        client
+    )?;
+
 
     hc.do_get("/hello").await?.print().await?;
 

@@ -35,10 +35,10 @@ impl AppState {
         let coin_network_repo = Arc::new(PostgresCoinNetworkRepository);
         let reward_claim_repo = Arc::new(PostgresRewardClaimRepository);
         let near_rpc_manager = Arc::new(NearRpcManager::new(
-            config.get_near_network_config().rpc_client(),
-            config.get_signer().clone(),
-            config.get_near_network_config().whitelisted_contracts.clone(),
-            config.get_near_network_config().whitelisted_senders.clone(),
+            config.near_network_config().rpc_client(),
+            config.signer().clone(),
+            config.near_network_config().whitelisted_contracts.clone(),
+            config.near_network_config().whitelisted_senders.clone(),
         ));
         let near_usecase = Arc::new(NearUsecaseImpl);
         let reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync> = Arc::new(RewardClaimUsecaseImpl::new(

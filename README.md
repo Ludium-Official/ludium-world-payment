@@ -49,7 +49,7 @@ cargo watch -q -c -w src/ -x run
 
 2. To run the tests with hot-reloading:
 ```sh
-cargo watch -q -c -w tests/ -x "test -q quick_dev2 -- --nocapture"
+cargo watch -q -c -w tests/ -x "test -q quick_dev -- --nocapture"
 ```
 
 ### db schema update (FYI)

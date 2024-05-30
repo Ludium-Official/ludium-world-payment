@@ -13,8 +13,6 @@ pub fn routes() -> Router {
 }
 
 async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
-	tracing::debug!("[handler] handler_hello - {params:?}");
-
 	let name = params.name.as_deref().unwrap_or("World!");
 	Html(format!("Hello <strong>{name}</strong>"))
 }

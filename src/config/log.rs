@@ -37,7 +37,6 @@ pub fn init_tracing() {
         .init();
 }
 
-// todo: logging details
 pub fn request_logging_middleware() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>, impl Fn(&Request<Body>) -> tracing::Span + Clone, impl Fn(&Request<Body>, &tracing::Span) + Clone, impl Fn(&Response, Duration, &tracing::Span) + Clone> {
     TraceLayer::new_for_http()
         .make_span_with(|request: &Request<Body>| {
@@ -58,7 +57,7 @@ struct RequestLogLine {
 	timestamp: String, // (should be iso8601)
 
 	// -- User and context attributes.
-	user_id: Option<u64>,
+	user_id: Option<String>,
 
 	// -- http request attributes.
 	req_path: String,
@@ -95,16 +94,14 @@ pub async fn log_request(
 		req_path: uri.to_string(),
 		req_method: req_method.to_string(),
 
-		user_id: ctx.map(|c| c.user_id()),
-
+		user_id: ctx.map(|c| c.user_info().user_id().to_string()),
 		client_error_type: client_error_message.map(|s| s.to_string()),
 
 		error_type,
 		error_data,
 	};
 
-	tracing::debug!("[request]\n{}", json!(log_line));
-	// TODO - Send to cloud-watch.
+	tracing::debug!("{}", json!(log_line));
 
 	Ok(())
 }

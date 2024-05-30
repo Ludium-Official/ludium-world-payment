@@ -145,7 +145,7 @@ mod tests {
 
         let config = config().await;
         let near_rpc_manager = Arc::new(NearRpcManager::new(
-            config.get_near_network_config().rpc_client(),
+            config.near_network_config().rpc_client(),
             KeyRotatingSignerWrapper::from_signers(vec![signer]),
             whitelisted_contract,
             whitelisted_senders,

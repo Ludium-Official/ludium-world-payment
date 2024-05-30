@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{http::StatusCode, response::{IntoResponse, Response}};
 use serde::Serialize;
 use serde_with::serde_as;
@@ -10,16 +12,10 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Clone, Debug, Serialize, strum_macros::AsRefStr)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
-	// -- Mock Login Errors.
-    LoginFail,
-
-    // -- Mock Auth Errors.
-    AuthFailNoAuthTokenCookie,
-    AuthFailTokenWrongFormat,
+    // -- Auth
+    AuthFailNoAuthInformation,
     AuthFailCtxNotInRequestExt,
-
-	// -- Mock Errors
-	UserNicknameNotFound { nickname: String },
+	AdminUnauthorized { message: String },
 
 	// -- Request Params
 	UUIDParsingError { message: String },
@@ -30,6 +26,9 @@ pub enum Error {
 
 	// -- Usecase 
 	Usecase(usecase::error::Error),
+
+	// -- 
+	Unknown
 }
 
 // region:    --- Error Boilerplate
@@ -45,13 +44,13 @@ impl core::fmt::Display for Error {
 impl std::error::Error for Error {}
 // endregion: --- Error Boilerplate
 
-
 impl IntoResponse for Error {
 	fn into_response(self) -> Response {
 		tracing::debug!("[into_response] - {self:?}");
 
-		let (status, client_error_message) = self.client_status_and_error();
-        (status, client_error_message.to_string()).into_response()
+		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
+		response.extensions_mut().insert(Arc::new(self));
+		response
 	}
 }
 
@@ -59,27 +58,26 @@ impl Error {
 	pub fn client_status_and_error(&self) -> (StatusCode, String) {
 		#[allow(unreachable_patterns)]
 		match self {
-			// -- Mock 
-			Self::LoginFail => (StatusCode::FORBIDDEN, "Login Failed".to_string()),
-			Self::AuthFailNoAuthTokenCookie
-			| Self::AuthFailTokenWrongFormat
+			// -- Auth 
+			Self::AuthFailNoAuthInformation
 			| Self::AuthFailCtxNotInRequestExt => {
 				(StatusCode::FORBIDDEN, "No Auth".to_string())
-			}
-			Self::UserNicknameNotFound { .. } => {
-				(StatusCode::BAD_REQUEST, "User Nickname Not Found,".to_string())
-			}
+			},
+			Self::AdminUnauthorized { message } => (
+				StatusCode::FORBIDDEN,
+				message.to_string(),
+			),
 
 			// -- Request Params
 			Self::UUIDParsingError { message } => (
 				StatusCode::BAD_REQUEST,
-				message.clone(),
+				message.to_string(),
 			),
 
 			// -- Output
 			Self::Postgres { .. } => (
 				StatusCode::INTERNAL_SERVER_ERROR,
-				"Postgres Error".to_string(),
+				"PostgresDb Error".to_string(),
 			),
 
 			Self::Near(near::error::Error::TransactionNotExecuted { message }) => (

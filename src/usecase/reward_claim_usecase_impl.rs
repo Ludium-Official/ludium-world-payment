@@ -88,6 +88,7 @@ where
             }
 
             let reward_claim = self.reward_claim_repo.insert(db_manager.get_connection().await?.into(), payload).await?;
+            // todo : batch insert
             responses.push(CombinedRewardClaimResponse::from((reward_claim, coin_network.clone(), coin.clone(), network.clone())));
         }
 
@@ -107,7 +108,7 @@ where
         Ok(RewardClaimResponse::from(updated_claim))
     }
 
-    async fn approve_reward_claim(&self, claim_id: Uuid, payload: RewardClaimApprovePayload) -> Result<RewardClaimApproveResponse> {
+    async fn approve_reward_claim(&self, user_id: Uuid, claim_id: Uuid, payload: RewardClaimApprovePayload) -> Result<RewardClaimApproveResponse> {
         let db_manager = &self.db_manager;
         let reward_claim = self.reward_claim_repo.get(db_manager.get_connection().await?.into(), claim_id).await?;
 
@@ -119,7 +120,7 @@ where
             id: Uuid::new_v4(),
             reward_claim_id: claim_id,
             transaction_hash: String::new(),
-            sended_user_id: Uuid::new_v4(), // todo: get user_id from cookie
+            sended_user_id: user_id,
             sended_user_address: String::new(),
         };
         

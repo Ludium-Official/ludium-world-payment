@@ -1,4 +1,4 @@
-#![allow(unused)] // For beginning only.
+// #![allow(unused)] // For beginning only.
 
 mod adapter;
 mod port;
@@ -8,8 +8,8 @@ mod usecase;
 mod state; 
 
 use std::sync::Arc;
-use adapter::input::ctx::Ctx;
-use axum::{middleware, Extension, Router};
+use axum::{middleware, Router};
+use config::log::request_logging_middleware;
 use state::AppState;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
@@ -28,25 +28,29 @@ async fn main() -> Result<()>{
     let config = config().await;
     let app_state = Arc::new(AppState::new(&config).await?);
 
-    let routes_apis = web::_dev_routes_user::routes(Arc::clone(&app_state))
-        .merge(web::routes_coin::routes(Arc::clone(&app_state)))
+    let mut routes_apis: Router;
+    let mut routes_all: Router = Router::new();
+
+    if config.is_dev() {
+        tracing::debug!("Running in dev mode");
+        routes_apis = web::_dev_routes_user::routes(Arc::clone(&app_state));
+        routes_all = routes_all.merge(web::_dev_routes_login::routes());
+    }
+
+    routes_apis = web::routes_coin::routes(Arc::clone(&app_state))
         .merge(web::routes_network::routes(Arc::clone(&app_state)))
         .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))
         .route_layer(middleware::from_fn(auth::mw_require_auth));
-    
-    // TODO: Add a middleware to resolve the context real value
-    let ctx = Ctx::new(0);
 
-    let routes_all: Router = Router::new()
+    routes_all = routes_all
         .merge(routes_hello::routes())
-        .merge(_dev_routes_login::routes())
         .nest("/api", routes_apis)
         .layer(middleware::map_response(response::mapper))
+        .layer(request_logging_middleware())
         .layer(middleware::from_fn_with_state(
             Arc::clone(&app_state),
             auth::mw_ctx_resolver,
         ))
-        .layer(Extension(ctx)) 
         .layer(CookieManagerLayer::new())
         .fallback_service(routes_static());
 

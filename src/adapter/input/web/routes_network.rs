@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use axum::extract::State;
-use axum::{Router, Json, Extension, extract::Path, routing::get};
+use axum::{Router, Json, extract::Path, routing::get};
 use crate::adapter::input::ctx::Ctx;
 use crate::domain::model::network::{NetworkResponse, NewNetworkPayload};
 use crate::port::output::network_repository::NetworkRepository;
@@ -19,10 +19,10 @@ pub fn routes(state: Arc<AppState>) -> Router {
 #[allow(unused)]
 async fn create_network(
 	State(state): State<Arc<AppState>>,
-	Extension(ctx): Extension<Ctx>,
+    _ctx: Ctx,
 	Json(new_network_payload): Json<NewNetworkPayload>,
 ) -> Result<Json<NetworkResponse>> {
-	tracing::debug!("[handler] create_network {:?}", ctx);
+	tracing::debug!("[handler] create_network");
 
 	let network = state.network_repo.insert(
         state.db_manager.get_connection().await?,
@@ -34,7 +34,7 @@ async fn create_network(
 
 async fn list_networks(
     State(state): State<Arc<AppState>>,
-	Extension(ctx): Extension<Ctx>,
+    _ctx: Ctx,
 ) -> Result<Json<Vec<NetworkResponse>>> {
     tracing::debug!("[handler] list_networks");
 
@@ -47,7 +47,7 @@ async fn list_networks(
 
 async fn get_network(
     State(state): State<Arc<AppState>>,
-	Extension(ctx): Extension<Ctx>,
+    _ctx: Ctx,
     Path(id): Path<String>
 ) -> Result<Json<NetworkResponse>> {
     tracing::debug!("[handler] get_network");

@@ -69,7 +69,7 @@ impl RpcClient for NearRpcManager {
         }
     
         let delegated_action_receiver_id = signed_delegate_action.delegate_action.receiver_id;
-        if self.whitelisted_contracts.contains(&delegated_action_receiver_id.to_string()) {
+        if !self.whitelisted_contracts.contains(&delegated_action_receiver_id.to_string()) {
             return Err(Error::NotWhitelisted { message: format!("delegated_action receiver {delegated_action_receiver_id} is not whitelisted") });
         }
         Ok(())

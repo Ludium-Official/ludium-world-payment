@@ -21,6 +21,7 @@ struct DatabaseConfig {
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    run_mode: String,
     server: ServerConfig,
     db: DatabaseConfig,
     signer: KeyRotatingSignerWrapper,
@@ -41,20 +42,25 @@ impl Config {
         self.server.port
     }
 
-    pub fn get_signer(&self) -> KeyRotatingSignerWrapper {
+    pub fn signer(&self) -> KeyRotatingSignerWrapper {
         self.signer.clone()
     }
 
-    pub fn get_near_network_config(&self) -> NearNetworkConfig {
+    pub fn near_network_config(&self) -> NearNetworkConfig {
         self.near_network_config.clone()
     }
+
+    pub fn is_dev(&self) -> bool {
+        self.run_mode == "development" || self.run_mode == "local"
+    }
+        
 }
 
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
 async fn init_config() -> Config {
     dotenv().ok();
-    let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "development".to_string());
+    let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "local".to_string());
     let env_file = format!(".env.{}", run_mode);
     dotenvy::from_filename(&env_file).ok();
     tracing::info!("RUN_MODE: {}", run_mode);
@@ -84,6 +90,7 @@ async fn init_config() -> Config {
     }
 
     Config {
+        run_mode,
         server: server_config,
         db: database_config,
         signer,

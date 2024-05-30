@@ -6,7 +6,6 @@ use tracing::info;
 use deadpool_diesel::postgres::{Manager, Pool};
 
 // NOTE: Hardcode to prevent deployed system db update.
-// sql files
 const SQL_RECREATE_DB_FILE_NAME: &str = "00-recreate-db.sql";
 const SQL_DIR: &str = "scripts/dev_initial";
 

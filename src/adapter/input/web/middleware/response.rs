@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{http::{Method, Uri}, response::{IntoResponse, Response}, Json};
 use serde_json::json;
 use uuid::Uuid;
@@ -10,25 +12,21 @@ pub async fn mapper(
 	req_method: Method,
 	res: Response,
 ) -> Response {
-	tracing::debug!("[response_mapper] main_response_mapper");
 	let uuid = Uuid::new_v4();
 
-	let service_error = res.extensions().get::<Error>();
+	let service_error = res.extensions().get::<Arc<Error>>().map(Arc::as_ref);
 	let client_status_error = service_error.map(|se| se.client_status_and_error());
 
-	// TODO: imporve this unwrap. use: client_status_and_error
 	let error_response =
 		client_status_error
 			.as_ref()
 			.map(|(status_code, client_error_message)| {
 				let client_error_body = json!({
 					"error": {
-						"type": client_error_message.clone(),
-						"req_uuid": uuid.to_string(),
+						"message": client_error_message.to_string(),
 					}
 				});
 
-                tracing::debug!("[client_error_body] {client_error_body}");
 				(*status_code, Json(client_error_body)).into_response()
 			});
 
