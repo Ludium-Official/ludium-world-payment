@@ -20,13 +20,15 @@ INSERT INTO public.network (id, name, code) VALUES
 
 -- Insert into coin table
 INSERT INTO public.coin (id, name, symbol, coin_type) VALUES 
-('5cb2dca4-b693-49b5-bd20-00ddce72d54b', 'USD Tether', 'USDT', 'FT'),
-('a3d281dd-4f85-4e5e-b639-b5bf1d8ee853', 'USD Coin', 'USDC', 'FT');
+('11111111-0000-0000-0000-000000000001', 'USD Tether', 'USDT', 'FT'),
+('11111111-0000-0000-0000-000000000002', 'USD Coin', 'USDC', 'FT'),
+('11111111-0000-0000-0000-000000000003', 'NEAR', 'NEAR', 'NATIVE');
 
 -- Insert into coin_network table
 INSERT INTO public.coin_network (id, coin_id, network_id, contract_address) VALUES 
-('1859ebb9-d031-473a-8241-b0b6832c2652', '5cb2dca4-b693-49b5-bd20-00ddce72d54b', '86b82d0f-80d5-4406-ae5a-e387db79ca32', 'tt_local.testnet'),
-('3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'a3d281dd-4f85-4e5e-b639-b5bf1d8ee853', '86b82d0f-80d5-4406-ae5a-e387db79ca32', 'usdc.contract.near');
+('22222222-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001', '86b82d0f-80d5-4406-ae5a-e387db79ca32', 'tt_local.testnet'),
+('22222222-9c58-47f8-9a0f-2d0c8d3f807f', '11111111-0000-0000-0000-000000000002', '86b82d0f-80d5-4406-ae5a-e387db79ca32', '??.testnet'),
+('33333333-9c58-47f8-9a0f-2d0c8d3f807f', '11111111-0000-0000-0000-000000000003', '86b82d0f-80d5-4406-ae5a-e387db79ca32', NULL);
 
 -- Insert into reward_claim table
 INSERT INTO public.reward_claim (id, mission_id, coin_network_id, reward_claim_status, amount, user_id, user_address) VALUES 

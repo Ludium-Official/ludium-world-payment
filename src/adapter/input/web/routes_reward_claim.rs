@@ -10,10 +10,10 @@ use super::middleware::permission::mw_require_admin;
 
 pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/reward_claims", post(create_reward_claim))
-        .route("/reward_claims/batch", post(create_batch_reward_claims))
-        .route("/reward_claims/:id/approve", put(approve_reward_claim).layer(middleware::from_fn(mw_require_admin)))
-        .route("/reward_claims/:id/reject", put(reject_reward_claim).layer(middleware::from_fn(mw_require_admin)))
+        .route("/reward-claims", post(create_reward_claim))
+        .route("/reward-claims/batch", post(create_batch_reward_claims))
+        .route("/reward-claims/:id/approve", put(approve_reward_claim).layer(middleware::from_fn(mw_require_admin)))
+        .route("/reward-claims/:id/reject", put(reject_reward_claim).layer(middleware::from_fn(mw_require_admin)))
         .with_state(state)
 }
 

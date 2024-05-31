@@ -1,5 +1,3 @@
-// #![allow(unused)] // For beginning only.
-
 mod adapter;
 mod port;
 mod domain;

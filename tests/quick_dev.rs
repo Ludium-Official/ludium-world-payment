@@ -31,7 +31,7 @@ fn create_headers(header_type: &str,
     headers
 }
 
-#[ignore]
+// #[ignore]
 #[tokio::test]
 async fn quick_dev() -> Result<()> {
     let headers = create_headers("provider");
@@ -57,9 +57,9 @@ async fn quick_dev() -> Result<()> {
     //         "self_intro": "hello! i'm quick_user_1",
     //         "phn_nmb": "010-1112-6672"
     //     })).await?.print().await?;
-    hc.do_get("/api/users").await?.print().await?;
+    // hc.do_get("/api/users").await?.print().await?;
     // hc.do_get("/api/users/quick_user_1").await?.print().await?;
-    hc.do_get("/api/coins").await?.print().await?;
+    hc.do_get("/api/coins?network_code=NEAR").await?.print().await?;
     Ok(())
 }
 

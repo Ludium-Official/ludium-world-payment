@@ -48,6 +48,12 @@ pub struct Coin {
     pub updated_date: NaiveDateTime,
 }
 
+#[derive(Debug)]
+pub struct CoinWithNetwork {
+    pub coin: Coin,
+    pub coin_network_id: Uuid,
+}
+
 #[derive(Insertable, Debug, Clone)]
 #[diesel(table_name = coin)]
 pub struct NewCoin {
@@ -72,6 +78,22 @@ pub struct CoinResponse {
     pub coin_type: CoinType,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
+    pub coin_network_id: Option<String>,
+}
+
+
+impl From<CoinWithNetwork> for CoinResponse {
+    fn from(cwn: CoinWithNetwork) -> Self {
+        CoinResponse {
+            id: cwn.coin.id.to_string(),
+            name: cwn.coin.name,
+            symbol: cwn.coin.symbol,
+            coin_type: cwn.coin.coin_type,
+            created_date: cwn.coin.created_date,
+            updated_date: cwn.coin.updated_date,
+            coin_network_id: Some(cwn.coin_network_id.to_string()),
+        }
+    }
 }
 
 impl From<Coin> for CoinResponse {
@@ -83,6 +105,7 @@ impl From<Coin> for CoinResponse {
             coin_type: coin.coin_type,
             created_date: coin.created_date,
             updated_date: coin.updated_date,
+            coin_network_id: None,
         }
     }
 }

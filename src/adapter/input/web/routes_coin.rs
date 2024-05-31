@@ -1,6 +1,7 @@
 use std::sync::Arc;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::{Router, Json, extract::Path, routing::get};
+use serde::Deserialize;
 use crate::adapter::input::ctx::Ctx;
 use crate::domain::model::coin::{CoinResponse, NewCoinPayload};
 use crate::domain::model::coin_network::CoinNetworkResponse;
@@ -33,15 +34,35 @@ async fn create_coin(
 	Ok(Json(CoinResponse::from(coin)))
 }
 
+#[derive(Deserialize)]
+struct NetworkCodeQuery {
+    network_code: Option<String>,
+}
+
 async fn list_coins(
     State(state): State<Arc<AppState>>,
     _ctx: Ctx,
+    Query(query): Query<NetworkCodeQuery>,
 ) -> Result<Json<Vec<CoinResponse>>> {
-    let coins = state
-        .coin_repo
-        .list(state.db_manager.get_connection().await?)
-        .await?;
-    Ok(Json(coins.into_iter().map(CoinResponse::from).collect()))
+    let coins: Vec<CoinResponse> = if let Some(network_code) = query.network_code {
+        state
+            .coin_repo
+            .list_by_network_code(state.db_manager.get_connection().await?, network_code)
+            .await?
+            .into_iter()
+            .map(CoinResponse::from)
+            .collect()
+    } else {
+        state
+            .coin_repo
+            .list(state.db_manager.get_connection().await?)
+            .await?
+            .into_iter()
+            .map(CoinResponse::from)
+            .collect()
+    };
+
+    Ok(Json(coins))
 }
 
 async fn get_coin(
