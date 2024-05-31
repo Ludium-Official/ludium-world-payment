@@ -5,10 +5,10 @@ use crate::config::config;
 use super::postgres::PostgresDbManager;
 
 /// Initialize environment for local development.
-pub async fn init_dev(database_url: &str, admin_database_url: &str) {
+pub async fn init_local(database_url: &str, admin_database_url: &str) {
 	static INIT: OnceCell<()> = OnceCell::const_new();
 	INIT.get_or_init(|| async {
-		dev_db::init_dev_db(database_url, admin_database_url).await.unwrap();
+		dev_db::init_local_db(database_url, admin_database_url).await.unwrap();
 	})
 	.await;
 }

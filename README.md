@@ -9,7 +9,7 @@ The system manages reward payment transaction records and handles various APIs t
 Ludium Reward Payment utilizes NEAR protocol's meta-transaction capabilities to facilitate efficient transaction processing. the system is designed with scalability in mind to support future integration with multi-chain networks, enabling seamless transactions across different chains.
 
 ### Project Structure - Hexagonal Architecture
-> check the [ARCHITECTURE.md](https://github.com/Ludium-Official/ludium-world-payment/blob/main/README.md)
+> check the [ARCHITECTURE.md](https://github.com/Ludium-Official/ludium-world-payment/blob/main/ARCHITECTURE.md)
 
 payment system use Hexagonal Architecture to achieve scalability and flexibility. This architecture allows us to: 
 - Isolate the core logic of the application from external dependencies

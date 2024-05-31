@@ -1,11 +1,11 @@
-CREATE type reward_claim_status AS ENUM ('READY', 'PENDING_APPROVAL', 'TRANSACTION_APPROVED', 'TRANSACTION_FAILED', 'REJECTED');
+CREATE type reward_claim_status AS ENUM ('PENDING_APPROVAL', 'TRANSACTION_APPROVED', 'TRANSACTION_FAILED');
 
 CREATE TABLE public.reward_claim (
     id uuid NOT NULL,
     mission_id uuid NOT NULL,
     coin_network_id uuid NOT NULL,
-    reward_claim_status reward_claim_status NOT NULL DEFAULT 'READY',
-    amount numeric(20,5) NOT NULL, -- 청구 금액
+    reward_claim_status reward_claim_status NOT NULL,
+    amount bigint NOT NULL, -- 청구 금액
     user_id uuid NOT NULL, -- 받을 사용자 user id
     user_address varchar(100) NOT NULL, -- 받을 사용자 지갑 주소
     created_date timestamp NOT NULL DEFAULT NOW(),

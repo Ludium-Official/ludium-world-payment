@@ -20,15 +20,11 @@ near_network="testnet"
 rpc_url="https://rpc.testnet.near.org"
 
 # can interact with all contracts
-use_whitelisted_contracts = true
-# example of whitelisted contracts
-#   whitelisted_contracts = [
-#        "usdc.usd-coin.testnet",
-#        "usdt.tether-token.testnet",
-#    ]
-whitelisted_contracts = ["tt_local.testnet"]
+# if empty, just pass the validation
+# ex) whitelisted_contracts = ["tt_local.testnet", "usdt.fakes.testnet"]
+whitelisted_contracts = []
 
 # can be sent from all users
-use_whitelisted_senders = true
-whitelisted_senders = ["nomnomnom.testnet", "relayer_test0.testnet", "relayer_test1.testnet", "won999.testnet"]
+# if empty, just pass the validation
+whitelisted_senders = []
 

@@ -22,8 +22,6 @@ async fn create_network(
     _ctx: Ctx,
 	Json(new_network_payload): Json<NewNetworkPayload>,
 ) -> Result<Json<NetworkResponse>> {
-	tracing::debug!("[handler] create_network");
-
 	let network = state.network_repo.insert(
         state.db_manager.get_connection().await?,
         new_network_payload,
@@ -36,8 +34,6 @@ async fn list_networks(
     State(state): State<Arc<AppState>>,
     _ctx: Ctx,
 ) -> Result<Json<Vec<NetworkResponse>>> {
-    tracing::debug!("[handler] list_networks");
-
     let networks = state
         .network_repo
         .list(state.db_manager.get_connection().await?)
@@ -50,8 +46,6 @@ async fn get_network(
     _ctx: Ctx,
     Path(id): Path<String>
 ) -> Result<Json<NetworkResponse>> {
-    tracing::debug!("[handler] get_network");
-
     let id = Uuid::parse_str(&id).map_err(|_| Error::UUIDParsingError{ message: format!("Invalid UUID: {}", id)})?;
     let network = state
         .network_repo

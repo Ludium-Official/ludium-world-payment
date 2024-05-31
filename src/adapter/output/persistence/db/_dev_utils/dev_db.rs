@@ -9,8 +9,8 @@ use deadpool_diesel::postgres::{Manager, Pool};
 const SQL_RECREATE_DB_FILE_NAME: &str = "00-recreate-db.sql";
 const SQL_DIR: &str = "scripts/dev_initial";
 
-pub async fn init_dev_db(database_url: &str, admin_database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    tracing::info!("{:} - init_dev_db()", "[DEV-ONLY]");
+pub async fn init_local_db(database_url: &str, admin_database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
+    tracing::info!("{:} - init_local_db()", "[LOCAL-ONLY]");
     let sql_dir = get_sql_dir()?;
     
     recreate_db(admin_database_url, &sql_dir).await?;
@@ -57,7 +57,7 @@ async fn execute_sql_files(database_url: &str, sql_dir: &Path) -> Result<(), Box
 }
 
 async fn pexec(db: &Pool, file: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    info!("{:} - pexec: {:?}", "[DEV-ONLY]", file);
+    info!("{:} - pexec: {:?}", "[LOCAL-ONLY]", file);
 
     let content = fs::read_to_string(file)?;
     let sqls: Vec<String> = content.split(';').map(|s| s.to_string()).collect();

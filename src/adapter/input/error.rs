@@ -15,7 +15,7 @@ pub enum Error {
     // -- Auth
     AuthFailNoAuthInformation,
     AuthFailCtxNotInRequestExt,
-	AdminUnauthorized { message: String },
+	Unauthorized { message: String },
 
 	// -- Request Params
 	UUIDParsingError { message: String },
@@ -63,7 +63,7 @@ impl Error {
 			| Self::AuthFailCtxNotInRequestExt => {
 				(StatusCode::FORBIDDEN, "No Auth".to_string())
 			},
-			Self::AdminUnauthorized { message } => (
+			Self::Unauthorized { message } => (
 				StatusCode::FORBIDDEN,
 				message.to_string(),
 			),

@@ -19,23 +19,23 @@ INSERT INTO public.network (id, name, code) VALUES
 ('86b82d0f-80d5-4406-ae5a-e387db79ca32', 'NEAR Protocol', 'NEAR');
 
 -- Insert into coin table
-INSERT INTO public.coin (id, name, symbol, coin_type) VALUES 
-('11111111-0000-0000-0000-000000000001', 'USD Tether', 'USDT', 'FT'),
-('11111111-0000-0000-0000-000000000002', 'USD Coin', 'USDC', 'FT'),
-('11111111-0000-0000-0000-000000000003', 'NEAR', 'NEAR', 'NATIVE');
+INSERT INTO public.coin (id, name, symbol, coin_type, decimals) VALUES 
+('11111111-0000-0000-0000-000000000001', 'USD Tether', 'USDT', 'FT', 6),
+('11111111-0000-0000-0000-000000000002', 'USD Coin', 'USDC', 'FT', 6),
+('11111111-0000-0000-0000-000000000003', 'NEAR', 'NEAR', 'NATIVE', 24);
 
 -- Insert into coin_network table
 INSERT INTO public.coin_network (id, coin_id, network_id, contract_address) VALUES 
 ('22222222-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001', '86b82d0f-80d5-4406-ae5a-e387db79ca32', 'tt_local.testnet'),
-('22222222-9c58-47f8-9a0f-2d0c8d3f807f', '11111111-0000-0000-0000-000000000002', '86b82d0f-80d5-4406-ae5a-e387db79ca32', '??.testnet'),
+('22222222-9c58-47f8-9a0f-2d0c8d3f807f', '11111111-0000-0000-0000-000000000002', '86b82d0f-80d5-4406-ae5a-e387db79ca32', 'usdt.fakes.testnet'),
 ('33333333-9c58-47f8-9a0f-2d0c8d3f807f', '11111111-0000-0000-0000-000000000003', '86b82d0f-80d5-4406-ae5a-e387db79ca32', NULL);
 
 -- Insert into reward_claim table
 INSERT INTO public.reward_claim (id, mission_id, coin_network_id, reward_claim_status, amount, user_id, user_address) VALUES 
-('1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d', '5f4d3c2b-1a0e-9f8d-7c6b-5a4d3c2e1f0a', '1859ebb9-d031-473a-8241-b0b6832c2652', 'READY', 100.00, 'd7f6e5c4-b3a2-1f0e-9d8c-7b6a5d4e3f2c', 'user_wallet_address_1'),
-('2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', '4d3c2b1a-0e9f-8d7c-6b5a-4d3c2e1f0a5d', '3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'TRANSACTION_APPROVED', 200.00, 'e5c4d3b2-a1f0-9e8d-7c6b-5a4d3c2f1e0d', 'user_wallet_address_2'),
-('3c4d5e6a-7a8b-9c0d-1e2a-3a41111d0000', '2b1a0e9f-8d7c-6b5a-4d3c-abcd2e1f0a5d', '1859ebb9-d031-473a-8241-b0b6832c2652', 'READY', 300.00, '4d3c2b1a-0e9f-8d7c-6b5a-4d3c2e1f0a5d', 'user_wallet_address_3'),
-('4d5e6f7a-8b9c-0d1e-2f3a-4a1234c6d000', '3c2b1a0e-9f8d-7c6b-5a4d-abcd3c2e1f0a', '3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'READY', 400.00, '5e6f7a8b-9c0d-1e2f-3a4b-abcd5c6d7e8f', 'user_wallet_address_4');
+('1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d', '5f4d3c2b-1a0e-9f8d-7c6b-5a4d3c2e1f0a', '1859ebb9-d031-473a-8241-b0b6832c2652', 'TRANSACTION_APPROVED', 10000, 'd7f6e5c4-b3a2-1f0e-9d8c-7b6a5d4e3f2c', 'user_wallet_address_1'),
+('2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', '4d3c2b1a-0e9f-8d7c-6b5a-4d3c2e1f0a5d', '3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'TRANSACTION_APPROVED', 20000, 'e5c4d3b2-a1f0-9e8d-7c6b-5a4d3c2f1e0d', 'user_wallet_address_2'),
+('3c4d5e6a-7a8b-9c0d-1e2a-3a41111d0000', '2b1a0e9f-8d7c-6b5a-4d3c-abcd2e1f0a5d', '1859ebb9-d031-473a-8241-b0b6832c2652', 'REJECTED', 30000, '4d3c2b1a-0e9f-8d7c-6b5a-4d3c2e1f0a5d', 'user_wallet_address_3'),
+('4d5e6f7a-8b9c-0d1e-2f3a-4a1234c6d000', '3c2b1a0e-9f8d-7c6b-5a4d-abcd3c2e1f0a', '3e6d84d8-9c58-47f8-9a0f-2d0c8d3f807f', 'READY', 40000, '5e6f7a8b-9c0d-1e2f-3a4b-abcd5c6d7e8f', 'user_wallet_address_4');
 
 -- Insert into reward_claim_detail table
 INSERT INTO public.reward_claim_detail (id, reward_claim_id, transaction_hash, sended_user_id, sended_user_address) VALUES 

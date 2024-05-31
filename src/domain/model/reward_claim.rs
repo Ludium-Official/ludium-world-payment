@@ -3,7 +3,6 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use diesel_derive_enum::DbEnum;
-use bigdecimal::BigDecimal;
 use super::coin::Coin;
 use super::coin_network::CoinNetworkDetailsResponse;
 use super::network::Network;
@@ -59,7 +58,7 @@ pub struct RewardClaim {
     pub mission_id: Uuid,
     pub coin_network_id: Uuid,
     pub reward_claim_status: RewardClaimStatus,
-    pub amount: BigDecimal,
+    pub amount: i64,
     pub user_id: Uuid,
     pub user_address: String,
     pub created_date: NaiveDateTime,
@@ -73,7 +72,7 @@ pub struct NewRewardClaim {
     pub mission_id: Uuid,
     pub coin_network_id: Uuid,
     pub reward_claim_status: RewardClaimStatus,
-    pub amount: BigDecimal,
+    pub amount: i64,   
     pub user_id: Uuid,
     pub user_address: String,
 }
@@ -82,7 +81,7 @@ pub struct NewRewardClaim {
 pub struct NewRewardClaimPayload {
     pub mission_id: Uuid,
     pub coin_network_id: Uuid,
-    pub amount: BigDecimal,
+    pub amount: String,
     pub user_id: Uuid,
     pub user_address: String,
 }
@@ -96,12 +95,13 @@ pub struct CombinedRewardClaimResponse {
     user_id: String,
     user_address: String,
     reward_claim_status: RewardClaimStatus,
+    detail: RewardClaimDetailResponse,
     created_date: String,
     updated_date: String,
 }
 
-impl From<(RewardClaim, CoinNetwork, Coin, Network)> for CombinedRewardClaimResponse {
-    fn from((claim, coin_network, coin, network): (RewardClaim, CoinNetwork, Coin, Network)) -> Self {
+impl From<(RewardClaim, RewardClaimDetail, CoinNetwork, Coin, Network)> for CombinedRewardClaimResponse {
+    fn from((claim, detail, coin_network, coin, network): (RewardClaim, RewardClaimDetail, CoinNetwork, Coin, Network)) -> Self {
         Self {
             id: claim.id.to_string(),
             amount: claim.amount.to_string(),
@@ -110,6 +110,7 @@ impl From<(RewardClaim, CoinNetwork, Coin, Network)> for CombinedRewardClaimResp
             user_id: claim.user_id.to_string(),
             user_address: claim.user_address,
             reward_claim_status: claim.reward_claim_status,
+            detail: RewardClaimDetailResponse::from(detail),
             created_date: claim.created_date.to_string(),
             updated_date: claim.updated_date.to_string(),
         }
@@ -145,22 +146,3 @@ impl From<RewardClaim> for RewardClaimResponse {
     }
 }
 
-#[derive(Deserialize, Clone)]
-pub struct RewardClaimApprovePayload {
-    pub encode_signed_delegate: Vec<u8>,
-}
-
-#[derive(Serialize)]
-pub struct RewardClaimApproveResponse {
-    reward_claim: RewardClaimResponse,
-    reward_claim_detail: RewardClaimDetailResponse
-}
-
-impl From<(RewardClaim, RewardClaimDetail)> for RewardClaimApproveResponse {
-    fn from((claim, detail): (RewardClaim, RewardClaimDetail)) -> Self {
-        Self {
-            reward_claim: RewardClaimResponse::from(claim),
-            reward_claim_detail: RewardClaimDetailResponse::from(detail),
-        }
-    }
-}

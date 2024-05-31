@@ -37,6 +37,16 @@ impl PartialEq for CoinType {
     }
 }
 
+impl core::fmt::Display for CoinType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CoinType::Native => write!(f, "NATIVE"),
+            CoinType::FT => write!(f, "FT"),
+            CoinType::NFT => write!(f, "NFT"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Queryable, Identifiable)]
 #[diesel(table_name = coin)]
 pub struct Coin {
@@ -44,9 +54,11 @@ pub struct Coin {
     pub name: String,
     pub symbol: String,
     pub coin_type: CoinType,
+    pub decimals: i32,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
 }
+
 
 #[derive(Debug)]
 pub struct CoinWithNetwork {
@@ -60,6 +72,7 @@ pub struct NewCoin {
     pub id: Uuid,
     pub name: String,
     pub symbol: String,
+    pub decimals: i32,
     pub coin_type: CoinType,
 }
 
@@ -68,6 +81,7 @@ pub struct NewCoinPayload {
     pub name: String,
     pub symbol: String,
     pub coin_type: String,
+    pub decimals: i32,
 }
 
 #[derive(Serialize)]
@@ -75,6 +89,7 @@ pub struct CoinResponse {
     pub id: String,
     pub name: String,
     pub symbol: String,
+    pub decimals: i32,
     pub coin_type: CoinType,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
@@ -88,6 +103,7 @@ impl From<CoinWithNetwork> for CoinResponse {
             id: cwn.coin.id.to_string(),
             name: cwn.coin.name,
             symbol: cwn.coin.symbol,
+            decimals: cwn.coin.decimals,
             coin_type: cwn.coin.coin_type,
             created_date: cwn.coin.created_date,
             updated_date: cwn.coin.updated_date,
@@ -102,6 +118,7 @@ impl From<Coin> for CoinResponse {
             id: coin.id.to_string(),
             name: coin.name,
             symbol: coin.symbol,
+            decimals: coin.decimals,
             coin_type: coin.coin_type,
             created_date: coin.created_date,
             updated_date: coin.updated_date,

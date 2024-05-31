@@ -3,6 +3,13 @@ use near_primitives::{types::AccountId, hash::CryptoHash, views::{
 }};
 use serde::{Deserialize, Serialize};
 
+
+pub enum TransferActionType {
+    Native { user_address: String, amount_in_smallest_unit: u128 },
+    FtTransfer { ft_contract_id: AccountId, user_address: String, amount_in_smallest_unit: u128 },
+}
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionResult {
     pub status: FinalExecutionStatus,

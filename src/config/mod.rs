@@ -50,8 +50,8 @@ impl Config {
         self.near_network_config.clone()
     }
 
-    pub fn is_dev(&self) -> bool {
-        self.run_mode == "development" || self.run_mode == "local"
+    pub fn is_local(&self) -> bool {
+        self.run_mode == "local"
     }
         
 }
@@ -60,7 +60,7 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
 async fn init_config() -> Config {
     dotenv().ok();
-    let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "local".to_string());
+    let run_mode = env::var("PAYMENT_RUN_MODE").unwrap_or_else(|_| "local".to_string());
     let env_file = format!(".env.{}", run_mode);
     dotenvy::from_filename(&env_file).ok();
     tracing::info!("RUN_MODE: {}", run_mode);
@@ -73,20 +73,19 @@ async fn init_config() -> Config {
             .unwrap(),
     };
 
-    let databse_url_key = if cfg!(test) { "TEST_DATABASE_URL" } else { "DATABASE_URL" };
     let database_config = DatabaseConfig {
-        url: env::var(databse_url_key).expect("DATABASE_URL must be set"),
+        url: env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
     };
 
     let near_network_config = NearNetworkConfig::init();
     let signer = near_network_config.init_rotating_signer();
 
-    if run_mode == "development" || run_mode == "local" {
+    if run_mode == "local" {
         // NOTE: Hardcode to prevent deployed system db update.
         let pg_host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".to_string());
         let pg_port = env::var("POSTGRES_PORT").unwrap_or_else(|_| "5432".to_string());
         let admin_database_url = format!("postgres://postgres:postgres@{}:{}/postgres", pg_host, pg_port);  
-        _dev_utils::init_dev(&database_config.url, &admin_database_url).await;
+        _dev_utils::init_local(&database_config.url, &admin_database_url).await;
     }
 
     Config {

@@ -12,7 +12,7 @@ use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
 
-use super::middleware::auth::mw_require_auth;
+use super::middleware::permission::mw_require_auth;
 
 pub fn routes(state: Arc<AppState>) -> Router {
 	Router::new()

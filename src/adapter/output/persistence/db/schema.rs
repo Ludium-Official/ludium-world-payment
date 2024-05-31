@@ -21,6 +21,7 @@ diesel::table! {
         #[max_length = 10]
         symbol -> Varchar,
         coin_type -> CoinType,
+        decimals -> Int4,
         created_date -> Timestamp,
         updated_date -> Timestamp,
     }
@@ -59,7 +60,7 @@ diesel::table! {
         mission_id -> Uuid,
         coin_network_id -> Uuid,
         reward_claim_status -> RewardClaimStatus,
-        amount -> Numeric,
+        amount -> Int8,
         user_id -> Uuid,
         #[max_length = 100]
         user_address -> Varchar,

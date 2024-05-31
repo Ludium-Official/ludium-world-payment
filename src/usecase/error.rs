@@ -1,6 +1,6 @@
 use serde::Serialize;
 use serde_with::serde_as;
-use crate::adapter::output::persistence::db;
+use crate::adapter::output::{near, persistence::db};
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[serde_as]
@@ -12,6 +12,9 @@ pub enum Error {
     },
 
     // --- 404
+    CoinTypeNotSupported{
+        coin_type: String,
+    },
     CoinNetworkIdNotFound { 
         id: String,
     },
@@ -27,6 +30,7 @@ pub enum Error {
     TransactionUnknownAction { 
         message: String,
     },
+    InvalidAmountConversion,
 
     // --- 500
     InternalServerError  { 
@@ -35,6 +39,7 @@ pub enum Error {
 
     // --- External
     AdapterOutputDB(db::error::Error),
+    AdapterOutptuNear(near::error::Error),
 }
 
 impl core::fmt::Display for Error {
@@ -49,5 +54,11 @@ impl std::error::Error for Error {}
 impl From<db::Error> for Error {
     fn from(error: db::Error) -> Self {
         Self::AdapterOutputDB(error)
+    }
+}
+
+impl From<near::error::Error> for Error {
+    fn from(error: near::error::Error) -> Self {
+        Self::AdapterOutptuNear(error)
     }
 }

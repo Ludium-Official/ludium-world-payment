@@ -3,9 +3,10 @@ services:
     build: .
     env_file:
       - .env.development
+    environment:
+      - PAYMENT_RUN_MODE=development
     ports:
       - 8090:8090
     volumes:
       - ./config.toml:/payment-app/config.toml
       - ./account_keys:/payment-app/account_keys
-      - ./scripts:/payment-app/scripts

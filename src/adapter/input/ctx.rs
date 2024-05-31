@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+
+#[allow(unused)] // authentication code will be added later
 #[derive(Debug, Clone, Deserialize)]
 pub struct UserInfo {
     user_id: String,
@@ -13,9 +15,6 @@ impl UserInfo {
         &self.user_id
     }
 
-    pub fn adm(&self) -> bool {
-        self.adm
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -38,7 +37,7 @@ impl Ctx {
         &self.user_info
     }
 
-    pub fn is_admin(&self) -> bool {
-        self.user_info.adm()
+    pub fn is_authenticated(&self) -> bool {
+        !self.access_token.is_empty() && !self.ggl_id.is_empty()
     }
 }

@@ -19,6 +19,7 @@ impl CoinRepository for PostgresCoinRepository {
             id: Uuid::new_v4(),
             name: new_coin_payload.name,
             symbol: new_coin_payload.symbol,
+            decimals: new_coin_payload.decimals,
             coin_type: CoinType::from(new_coin_payload.coin_type),
         };
 
@@ -95,6 +96,7 @@ mod tests {
         let new_coin_payload = NewCoinPayload {
             name: "Test Coin".to_string(),
             symbol: "TST".to_string(),
+            decimals: 18,
             coin_type: "FT".to_string(),
         };
 
@@ -120,12 +122,14 @@ mod tests {
         let new_coin_payload1 = NewCoinPayload {
             name: "Coin1".to_string(),
             symbol: "C1".to_string(),
+            decimals: 18,
             coin_type: "FT".to_string(),
         };
 
         let new_coin_payload2 = NewCoinPayload {
             name: "Coin2".to_string(),
             symbol: "C2".to_string(),
+            decimals: 18,
             coin_type: "FT".to_string(),
         };
 

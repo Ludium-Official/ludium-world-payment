@@ -15,18 +15,6 @@ use tower_cookies::{Cookie, Cookies};
 
 use crate::adapter::input::error::{Error, Result};
 
-pub async fn mw_require_auth(
-	ctx: Result<Ctx>,
-	req: Request<Body>,
-	next: Next,
-) -> Result<Response> {
-	tracing::debug!("[middlware] mw_require_auth = {ctx:?}");
-
-	ctx?;
-
-	Ok(next.run(req).await)
-}
-
 pub async fn mw_ctx_resolver(
 	_state: State<Arc<AppState>>,
 	cookies: Cookies,
