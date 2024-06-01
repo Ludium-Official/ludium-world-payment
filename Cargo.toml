@@ -13,6 +13,13 @@ axum = {version = "0.7", features = ["macros"]}
 axum-macros = "0.4.1"
 tower-http = { version = "0.5", features = ["fs", "trace"] }
 tower-cookies = "0.10"
+axum-server = { version = "0.6", features = ["tls-rustls"] }
+
+
+## tls
+rustls = "0.23"
+tokio-rustls = "0.26"
+rustls-pemfile = "2.1"
 
 ## json 
 serde = { version = "1.0", features = ["derive"] }

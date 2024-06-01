@@ -11,6 +11,7 @@ use crate::adapter::output::persistence::db::postgres::{
 };
 use crate::usecase::near_usecase_impl::NearUsecaseImpl;
 use crate::adapter::input::error::Result;
+use crate::port::output::db_manager::DbManager;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -29,6 +30,13 @@ pub struct AppState {
 impl AppState {
     pub async fn new(config: &Config) -> Result<Self> {
         let db_manager = Arc::new(PostgresDbManager::new(&config.db_url()).await?);
+
+        {
+            let _ = db_manager.get_connection().await?;
+            tracing::info!("established postgres db connection");
+        }
+
+        
         let user_repo = Arc::new(PostgresUserRepository);
         let coin_repo = Arc::new(PostgresCoinRepository);
         let network_repo = Arc::new(PostgresNetworkRepository);

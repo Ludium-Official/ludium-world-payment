@@ -44,7 +44,7 @@ impl PgError for diesel::result::Error {
 
 impl PgError for deadpool_diesel::PoolError {
     fn as_db_error(&self) -> Error {
-        Error::PoolError("Connection pool error".to_string()) 
+        Error::PoolError("get db connection pool error".to_string()) 
     }
 }
 
