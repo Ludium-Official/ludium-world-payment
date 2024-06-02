@@ -5,4 +5,4 @@
 /account_keys
 
 /tests/data/*
-/self_signed_cert/*
+/self_signed_certs/*
