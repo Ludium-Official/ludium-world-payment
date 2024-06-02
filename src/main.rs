@@ -68,15 +68,15 @@ async fn main() -> Result<()>{
         .unwrap();
     } else {
         let tls_config = RustlsConfig::from_pem_file(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("self_signed_certs")
+            PathBuf::from("./self_signed_certs")
                 .join("cert.pem"),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("self_signed_certs")
+            PathBuf::from("./self_signed_certs")
                 .join("key.pem"),
         )
         .await
         .unwrap();
+
+        tracing::info!("TLS file loaded");
 
         axum_server::bind_rustls(addr, tls_config)
         .serve(routes_all.into_make_service())
