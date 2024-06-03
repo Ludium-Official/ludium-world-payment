@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::{HashMap, HashSet}, sync::Arc};
 use async_trait::async_trait;
 use bigdecimal::{ToPrimitive, BigDecimal};
 // use deadpool_diesel::postgres::Object;
@@ -9,9 +9,9 @@ use bigdecimal::{ToPrimitive, BigDecimal};
 use uuid::Uuid;
 use crate::{
     adapter::output::near::rpc_client::NearRpcManager, domain::model::{
-        coin::CoinType, near::{TransactionResultResponse, TransferActionType}, reward_claim::{
-            CombinedRewardClaimResponse, NewRewardClaim, NewRewardClaimPayload, RewardClaimStatus
-        }, reward_claim_detail::NewRewardClaimDetail
+        coin::{Coin, CoinType}, coin_network::CoinNetwork, near::{TransactionResultResponse, TransferActionType}, network::Network, reward_claim::{
+            CombinedRewardClaimResponse, NewRewardClaim, NewRewardClaimPayload, RewardClaim, RewardClaimStatus
+        }, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}
     }, port::output::{
         coin_network_repository::CoinNetworkRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager
     }
@@ -65,6 +65,33 @@ where
     C: CoinNetworkRepository + Send + Sync,
     U: NearUsecase + Send + Sync,
 {
+    async fn get_me_reward_claim(&self, user_id: Uuid) -> Result<Vec<CombinedRewardClaimResponse>> {
+        let db_manager = &self.db_manager;
+        let reward_claim_list: Vec<(RewardClaim, RewardClaimDetail)> = self.reward_claim_repo
+            .list_all_by_user(db_manager.get_connection().await?.into(), user_id).await?;
+
+        let coin_network_ids: HashSet<Uuid> = reward_claim_list.iter()
+            .map(|(claim, _detail)| claim.coin_network_id)
+            .collect();
+        
+        let coin_network_list = self.coin_network_repo
+            .list_all_by_ids(db_manager.get_connection().await?.into(), coin_network_ids.into_iter().collect())
+            .await?;
+
+        let coin_network_map: HashMap<Uuid, (CoinNetwork, Coin, Network)> = coin_network_list.into_iter()
+            .map(|(coin_network, coin, network)| (coin_network.id, (coin_network, coin, network)))
+            .collect();
+
+        let combined_responses: Vec<CombinedRewardClaimResponse> = reward_claim_list.into_iter()
+            .map(|(claim, detail)| {
+                let (coin_network, coin, network) = coin_network_map.get(&claim.coin_network_id).unwrap();
+                CombinedRewardClaimResponse::from((claim, detail, coin_network.clone(), coin.clone(), network.clone()))
+            })
+            .collect();
+
+        Ok(combined_responses)
+    }
+
     // actually, at this time don't need to meta_tx logic, just send_tx is good. but for the future, I will keep this relayer code
     async fn create_reward_claim(&self, user_id: Uuid, payload: NewRewardClaimPayload) -> Result<CombinedRewardClaimResponse> {
         tracing::debug!("create_reward_claim");

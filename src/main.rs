@@ -37,6 +37,7 @@ async fn main() -> Result<()>{
     let mut routes_auth_apis = web::routes_network::routes(Arc::clone(&app_state))
         .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))
         .merge(web::routes_coin::routes(Arc::clone(&app_state)))
+        .merge(web::routes_coin_network::routes(Arc::clone(&app_state)))
         .route_layer(middleware::from_fn(permission::mw_require_auth));
 
     if config.is_local() {

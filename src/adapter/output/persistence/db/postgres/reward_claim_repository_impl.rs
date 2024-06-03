@@ -42,6 +42,17 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
+
+    async fn list_all_by_user(&self, conn: Object, user_id: Uuid) -> Result<Vec<(RewardClaim, RewardClaimDetail)>> {
+        conn.interact(move |conn| {
+            reward_claim::table
+                .filter(reward_claim::user_id.eq(user_id))
+                .inner_join(reward_claim_detail::table)
+                .load::<(RewardClaim, RewardClaimDetail)>(conn)
+        })
+        .await?
+        .map_err(|e| Error::from(adapt_db_error(e)))
+    }
 }
 
 

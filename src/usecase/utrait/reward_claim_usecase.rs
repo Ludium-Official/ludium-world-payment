@@ -6,4 +6,5 @@ use crate::usecase::error::Result;
 #[async_trait]
 pub trait RewardClaimUsecase {
     async fn create_reward_claim(&self, user_id: Uuid, payload: NewRewardClaimPayload) -> Result<CombinedRewardClaimResponse>;
+    async fn get_me_reward_claim(&self, user_id: Uuid) -> Result<Vec<CombinedRewardClaimResponse>>;
 }

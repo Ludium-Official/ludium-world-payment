@@ -62,7 +62,7 @@ async fn quick_dev() -> Result<()> {
     Ok(())
 }
 
-#[ignore]
+// #[ignore]
 #[tokio::test]
 async fn quick_reward() -> Result<()> {
     let headers = create_headers("admin");
@@ -85,7 +85,13 @@ async fn quick_reward() -> Result<()> {
 
     // coin
     hc.do_get("/api/coins").await?.print().await?;
+    hc.do_get("/api/coin-networks").await?.print().await?;
+    hc.do_get("/api/coin-networks?network_code=Near2").await?.print().await?;
+    hc.do_get("/api/me/reward-claims").await?.print().await?;
+    // hc.do_get("/api/coin_networks").await?.print().await?;
     // hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853").await?.print().await?;
+
+    // hc.do_get("/api/me/reward-claims").await?.print().await?;
 
     // network 
     // hc.do_get("/api/networks").await?.print().await?;

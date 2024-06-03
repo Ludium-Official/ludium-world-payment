@@ -28,7 +28,36 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
         Ok(result.map_err(|e| Error::from(e))?)
     }
 
-    async fn get_with_coins_and_networks(&self, conn: Object, coin_network_ids: Vec<Uuid>) -> Result<Vec<(CoinNetwork, Coin, Network)>> {
+    async fn list_all(&self, conn: Object) -> Result<Vec<(CoinNetwork, Coin, Network)>>{
+        let result = conn.interact(move |conn| {
+            coin_network::table
+                .inner_join(coin::table.on(coin_network::coin_id.eq(coin::id)))
+                .inner_join(network::table.on(coin_network::network_id.eq(network::id)))
+                .select((coin_network::all_columns, coin::all_columns, network::all_columns))
+                .load::<(CoinNetwork, Coin, Network)>(conn)
+                .map_err(adapt_db_error)
+        })
+        .await?
+        .map_err(|e| Error::from(e));
+
+        Ok(result.map_err(|e| Error::from(e))?)
+    }
+
+    async fn list_all_by_network_code(&self, conn: Object, network_code: String) -> Result<Vec<(CoinNetwork, Coin, Network)>> {
+        tracing::info!("list_all_by_network_code: network_code={}", network_code);
+        conn.interact(move |conn| {
+            coin::table
+                .inner_join(coin_network::table.on(coin_network::coin_id.eq(coin::id)))
+                .inner_join(network::table.on(network::id.eq(coin_network::network_id)))
+                .filter(network::code.ilike(network_code))
+                .select((coin_network::all_columns, coin::all_columns, network::all_columns))
+                .load::<(CoinNetwork, Coin, Network)>(conn)
+        })
+        .await?
+        .map_err(|e| Error::from(adapt_db_error(e)))
+    }
+
+    async fn list_all_by_ids(&self, conn: Object, coin_network_ids: Vec<Uuid>) -> Result<Vec<(CoinNetwork, Coin, Network)>> {
         let result = conn.interact(move |conn| {
             coin_network::table
                 .inner_join(coin::table.on(coin_network::coin_id.eq(coin::id)))

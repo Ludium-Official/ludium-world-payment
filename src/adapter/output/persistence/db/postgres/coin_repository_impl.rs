@@ -3,8 +3,6 @@ use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
 use crate::adapter::output::persistence::db::error::{Error, Result};
-use crate::adapter::output::persistence::db::schema::{network, coin_network};
-use crate::domain::model::coin::CoinWithNetwork;
 use crate::{domain::model::coin::{Coin, CoinType, NewCoin, NewCoinPayload}, port::output::coin_repository::CoinRepository};
 
 use super::{adapt_db_error, coin};
@@ -33,7 +31,6 @@ impl CoinRepository for PostgresCoinRepository {
     }
 
     async fn list(&self, conn: Object) -> Result<Vec<Coin>> {
-        tracing::debug!("list coins");
         conn.interact(|conn| {
             coin::table.load::<Coin>(conn)
         })
@@ -41,30 +38,7 @@ impl CoinRepository for PostgresCoinRepository {
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
-    async fn list_by_network_code(&self, conn: Object, network_code: String) -> Result<Vec<CoinWithNetwork>>{
-        tracing::debug!("list coins by network code: {:?}", network_code);
-        conn.interact(move |conn| {
-            coin::table
-                .inner_join(coin_network::table.on(coin_network::coin_id.eq(coin::id)))
-                .inner_join(network::table.on(network::id.eq(coin_network::network_id)))
-                .filter(network::code.ilike(network_code))
-                .select((coin::all_columns, coin_network::id))
-                .load::<(Coin, Uuid)>(conn)
-                .map(|results| {
-                    results.into_iter().map(|(coin, coin_network_id)| {
-                        CoinWithNetwork {
-                            coin,
-                            coin_network_id,
-                        }
-                    }).collect::<Vec<CoinWithNetwork>>()
-                })
-        })
-        .await?
-        .map_err(|e| Error::from(adapt_db_error(e)))
-    }
-
     async fn get(&self, conn: Object, coin_id: Uuid) -> Result<Coin> {
-        tracing::debug!("get coin by id: {:?}", coin_id);
         conn.interact(move |conn| {
             coin::table
                 .find(coin_id)
