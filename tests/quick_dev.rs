@@ -1,10 +1,6 @@
-// #![allow(unused)] // For beginning only.
-
-use std::sync::Arc;
 use anyhow::Result;
 use serde_json::json;
 use reqwest::header::{HeaderMap, HeaderValue};
-use tokio::task::JoinHandle;
 
 fn create_headers(header_type: &str,
 ) -> HeaderMap {
@@ -36,7 +32,7 @@ fn create_headers(header_type: &str,
 #[ignore]
 #[tokio::test]
 async fn quick_dev() -> Result<()> {
-    let headers = create_headers("provider");
+    let headers = create_headers("admin");
     let client = reqwest::Client::builder()
         .default_headers(headers);
     
@@ -53,20 +49,15 @@ async fn quick_dev() -> Result<()> {
         "password": "welcome"
     })).await?.print().await?;
 
-    // coin
+    // get apis 
     hc.do_get("/api/coins").await?.print().await?;
-    hc.do_get("/api/coins?network_code=NEAR").await?.print().await?;
-    hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853").await?.print().await?;
+    hc.do_get("/api/coin-networks?network_code=Near").await?.print().await?;
+    hc.do_get("/api/me/reward-claims").await?.print().await?;
 
-    // network 
-    hc.do_get("/api/networks").await?.print().await?;
-
-    // coin_network
-    hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853/networks").await?.print().await?;
     Ok(())
 }
 
-// #[ignore]
+#[ignore]
 #[tokio::test]
 async fn quick_reward() -> Result<()> {
     let headers = create_headers("provider");
@@ -87,23 +78,8 @@ async fn quick_reward() -> Result<()> {
         "password": "welcome"
     })).await?.print().await?;
 
-    // coin
-    hc.do_get("/api/coins").await?.print().await?;
-    hc.do_get("/api/coin-networks").await?.print().await?;
-    hc.do_get("/api/coin-networks?network_code=Near2").await?.print().await?;
-    hc.do_get("/api/me/reward-claims").await?.print().await?;
-    // hc.do_get("/api/coin_networks").await?.print().await?;
-    // hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853").await?.print().await?;
 
-    // hc.do_get("/api/me/reward-claims").await?.print().await?;
-
-    // network 
-    // hc.do_get("/api/networks").await?.print().await?;
-
-    // coin_network
-    // hc.do_get("/api/coins/a3d281dd-4f85-4e5e-b639-b5bf1d8ee853/networks").await?.print().await?;
-    // hc.do_get("/api/coins/5cb2dca4-b693-49b5-bd20-00ddce72d54b/networks").await?.print().await?;
-
+    
     // reward_claims
     // usdt
     hc.do_post("/api/reward-claims", json!({
@@ -131,62 +107,6 @@ async fn quick_reward() -> Result<()> {
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
-
     Ok(())
 }
 
-
-#[tokio::test]
-async fn quick_multi_reward() -> Result<()> {
-    let headers = create_headers("provider");
-    let client = reqwest::Client::builder()
-        .default_headers(headers);
-    
-    let hc: Arc<httpc_test::Client> = Arc::new(httpc_test::new_client_with_reqwest(
-        "http://localhost:8080",
-        client
-    )?);
-
-    hc.do_get("/hello").await?.print().await?;
-
-    // login
-    hc.do_post("/api/login", json!({
-        "username": "demo1",
-        "password": "welcome"
-    })).await?.print().await?;
-
-    let mut handles: Vec<JoinHandle<Result<()>>> = Vec::new();
-
-    let user_ids = [
-        "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
-        "00000000-0000-0000-0000-000000000002",
-        "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
-        "00000000-0000-0000-0000-000000000003",
-    ];
-    for i in 0..4 {
-        let hc_clone = Arc::clone(&hc);
-        let handle = tokio::task::spawn_blocking(move || {
-            let mission_id = format!("a0008dda-0101-d2ff-a12d-b5bf1001383{}", i);
-            let user_id = user_ids[i % 4];
-            tokio::runtime::Handle::current().block_on(send_reward_claim(hc_clone, &mission_id, &user_id))
-        });
-        handles.push(handle);
-    }
-
-    for handle in handles {
-        handle.await??;
-    }
-
-    Ok(())
-}
-
-async fn send_reward_claim(hc: Arc<httpc_test::Client>, mission_id: &str, user_id: &str) -> Result<()> {
-    hc.do_post("/api/reward-claims", json!({
-        "mission_id": mission_id,
-        "coin_network_id": "22222222-0000-0000-0000-000000000001",
-        "amount": "0.00001",
-        "user_id": user_id,
-        "user_address": "nomnomnom.testnet"
-    })).await?.print().await?;
-    Ok(())
-}

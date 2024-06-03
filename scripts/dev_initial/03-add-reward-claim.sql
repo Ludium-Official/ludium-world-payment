@@ -1,16 +1,17 @@
-CREATE type reward_claim_status AS ENUM ('READY', 'PENDING_APPROVAL', 'TRANSACTION_APPROVED', 'TRANSACTION_FAILED');
+CREATE type reward_claim_status AS ENUM ('READY', 'TRANSACTION_APPROVED', 'TRANSACTION_FAILED');
 
 CREATE TABLE public.reward_claim (
     id uuid NOT NULL,
     mission_id uuid NOT NULL,
     coin_network_id uuid NOT NULL,
     reward_claim_status reward_claim_status NOT NULL,
-    amount bigint NOT NULL, -- 청구 금액
+    amount numeric NOT NULL, -- 청구 금액
     user_id uuid NOT NULL, -- 받을 사용자 user id
     user_address varchar(100) NOT NULL, -- 받을 사용자 지갑 주소
     created_date timestamp NOT NULL DEFAULT NOW(),
     updated_date timestamp NOT NULL DEFAULT NOW(),
-    CONSTRAINT reward_claim_pk PRIMARY KEY (id)
+    CONSTRAINT reward_claim_pk PRIMARY KEY (id),
+    CONSTRAINT unique_mission_user UNIQUE (mission_id, user_id) -- Unique constraint
 );
 
 CREATE TABLE public.reward_claim_detail (
@@ -18,7 +19,7 @@ CREATE TABLE public.reward_claim_detail (
     reward_claim_id uuid NOT NULL,
     transaction_hash varchar(100) NOT NULL, -- 전송 트랜잭션 해시 값
     sended_user_id uuid NOT NULL, -- 보낸 사용자 user id
-    sended_user_address varchar(100)NOT NULL, -- 보낸 사용자 지갑 주소
+    sended_user_address varchar(100) NOT NULL, -- 보낸 사용자 지갑 주소
     created_date timestamp NOT NULL DEFAULT NOW(),
     updated_date timestamp NOT NULL DEFAULT NOW(),
     CONSTRAINT reward_claim_detail_pk PRIMARY KEY (id),

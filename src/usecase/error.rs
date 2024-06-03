@@ -8,9 +8,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Clone, Serialize, Debug)]
 pub enum Error {
     // --- 400 
-    InvalidEncodedSignedDelegateDeserialization { 
-        message: String,
-    },
     RewardClaimDuplicate { 
         mission_id: String,
         user_id: String,
@@ -56,10 +53,6 @@ impl Error {
 	pub fn client_status_and_error(&self) -> (StatusCode, String) {
 		#[allow(unreachable_patterns)]
 		match self {
-            Self::InvalidEncodedSignedDelegateDeserialization { message } => (
-                StatusCode::BAD_REQUEST,
-                message.to_string()
-            ),
             Self::CoinTypeNotSupported { coin_type } => (
                 StatusCode::NOT_FOUND,
                 format!("Coin Type Not Supported: {}", coin_type),
@@ -96,9 +89,9 @@ impl Error {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Transaction Timeout Failed".to_string(),
             ),
-            Self::TransactionActionFailed { .. } => (
+            Self::TransactionActionFailed { message } => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Transaction Action Failed".to_string(),
+                message.to_string(),
             ),
 
             Self::AdapterOutputDB(error) => error.client_status_and_error(),

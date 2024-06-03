@@ -9,7 +9,6 @@ use crate::adapter::output::persistence::db::postgres::{
     network_repository_impl::PostgresNetworkRepository,
     reward_claim_repository_impl::PostgresRewardClaimRepository
 };
-use crate::usecase::near_usecase_impl::NearUsecaseImpl;
 use crate::adapter::input::error::Result;
 use crate::port::output::db_manager::DbManager;
 
@@ -22,7 +21,6 @@ pub struct AppState {
     pub network_repo: Arc<PostgresNetworkRepository>,
     pub coin_network_repo: Arc<PostgresCoinNetworkRepository>,
     pub reward_claim_repo: Arc<PostgresRewardClaimRepository>,
-    pub near_usecase: Arc<NearUsecaseImpl>,
     pub reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync>,
     pub near_rpc_manager: Arc<NearRpcManager>, 
 }
@@ -48,12 +46,10 @@ impl AppState {
             config.near_network_config().whitelisted_contracts.clone(),
             config.near_network_config().whitelisted_senders.clone(),
         ));
-        let near_usecase = Arc::new(NearUsecaseImpl);
         let reward_claim_usecase: Arc<dyn RewardClaimUsecase + Send + Sync> = Arc::new(RewardClaimUsecaseImpl::new(
             Arc::clone(&db_manager),
             Arc::clone(&reward_claim_repo),
             Arc::clone(&coin_network_repo),
-            Arc::clone(&near_usecase),
             Arc::clone(&near_rpc_manager),
         ));
 
@@ -65,7 +61,6 @@ impl AppState {
             network_repo,
             coin_network_repo,
             reward_claim_repo,
-            near_usecase,
             reward_claim_usecase,
             near_rpc_manager,
         })

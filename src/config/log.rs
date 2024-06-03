@@ -29,6 +29,7 @@ pub fn init_tracing() {
         .with_target("tower_http::trace::on_response", Level::DEBUG)
         .with_target("tower_http::trace::on_request", Level::DEBUG)
         .with_target("tower_http::trace::make_span", Level::DEBUG)
+		.with_target("near_jsonrpc_client", Level::INFO)
         .with_default(Level::DEBUG);
 
     tracing_subscriber::registry()

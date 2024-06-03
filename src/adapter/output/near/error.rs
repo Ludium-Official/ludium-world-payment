@@ -1,5 +1,4 @@
 use axum::http::StatusCode;
-use near_jsonrpc_client::methods::tx::RpcTransactionError;
 use serde::Serialize;
 use serde_with::serde_as;
 
@@ -8,14 +7,30 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[serde_as]
 #[derive(Debug, Serialize, Clone)]
 pub enum Error {
-    TransactionNotExecuted { message: String },
+	// --- 400
+	InvalidEncodedSignedDelegateDeserialization { 
+        message: String,
+    },
+
+	// --- 403 
 	NotWhitelisted { message: String },
+
+	// --- 500
+	CustomInvalidNonce,
+	CustomInvalidSignature,
+	CustomInvalidTxError{
+		message: String,
+	},
+	TransactionNotExecuted { 
+		message: String 
+	},
 	CheckStorageDepositFailed { 
         message: String,
     },
-	RpcTransactionError {
+	
+	InternalServerError {
 		message: String,
-	},
+	}
 }
 
 impl core::fmt::Display for Error {
@@ -30,19 +45,35 @@ impl Error {
 	pub fn client_status_and_error(&self) -> (StatusCode, String) {
 		#[allow(unreachable_patterns)]
 		match self {
-			Self::TransactionNotExecuted { message } => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				message.to_string(),
-			),
+			Self::InvalidEncodedSignedDelegateDeserialization { message } => (
+                StatusCode::BAD_REQUEST,
+                message.to_string()
+            ),
 			Self::NotWhitelisted { message } => (
 				StatusCode::FORBIDDEN,
+				message.to_string(),
+			),
+			Self::TransactionNotExecuted { message } => (
+				StatusCode::INTERNAL_SERVER_ERROR,
 				message.to_string(),
 			),
 			Self::CheckStorageDepositFailed { message } => (
 				StatusCode::INTERNAL_SERVER_ERROR,
 				message.to_string(),
 			),
-			Self::RpcTransactionError { message } => (
+			Self::CustomInvalidNonce => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				"Transaction is not signed with the given public key".to_string(),
+			),
+			Self::CustomInvalidSignature => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				"Invalid signature".to_string(),
+			),
+			Self::CustomInvalidTxError { message } => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				message.to_string(),
+			),
+			Self::InternalServerError { message } => (
 				StatusCode::INTERNAL_SERVER_ERROR,
 				message.to_string(),
 			),
@@ -50,10 +81,3 @@ impl Error {
 	}
 }
 
-impl From<RpcTransactionError> for Error {
-	fn from(error: RpcTransactionError) -> Self {
-		Self::RpcTransactionError {
-			message: error.to_string()
-		}
-	}
-}

@@ -60,7 +60,7 @@ diesel::table! {
         mission_id -> Uuid,
         coin_network_id -> Uuid,
         reward_claim_status -> RewardClaimStatus,
-        amount -> Int8,
+        amount -> Numeric,
         user_id -> Uuid,
         #[max_length = 100]
         user_address -> Varchar,

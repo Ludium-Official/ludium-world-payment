@@ -1,14 +1,13 @@
+use bigdecimal::BigDecimal;
 use near_primitives::{types::AccountId, hash::CryptoHash, views::{
     ExecutionOutcomeWithIdView, FinalExecutionStatus,
 }};
 use serde::{Deserialize, Serialize};
 
-
 pub enum TransferActionType {
-    Native { user_address: String, amount_in_smallest_unit: u128 },
-    FtTransfer { ft_contract_id: AccountId, user_address: String, amount_in_smallest_unit: u128 },
+    Native { user_address: String, amount_in_smallest_unit: BigDecimal },
+    FtTransfer { ft_contract_id: AccountId, user_address: String, amount_in_smallest_unit: BigDecimal },
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionResult {
@@ -16,7 +15,6 @@ pub struct TransactionResult {
     pub transaction_outcome: ExecutionOutcomeWithIdView,
     pub receipts_outcome: Vec<ExecutionOutcomeWithIdView>,
 }
-
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionResultResponse {
