@@ -38,7 +38,7 @@ async fn quick_dev() -> Result<()> {
         .default_headers(headers);
     
     let hc = httpc_test::new_client_with_reqwest(
-        "http://localhost:8090",
+        "http://localhost:8080",
         client
     )?;
 
@@ -70,7 +70,7 @@ async fn quick_reward() -> Result<()> {
         .default_headers(headers);
     
     let hc = httpc_test::new_client_with_reqwest(
-        "http://localhost:8090",
+        "http://localhost:8080",
         client
     )?;
 
@@ -96,23 +96,23 @@ async fn quick_reward() -> Result<()> {
 
     // reward_claims
     // usdt
-    hc.do_post("/api/reward-claims", json!({
-        "mission_id": "a0008dda-0100-deff-a12d-b5bf10013831",
-        "coin_network_id": "22222222-0000-0000-0000-000000000001",
-        "amount": "0.00001",
-        "user_id": "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
-        "user_address": "nomnomnom.testnet"
-    })).await?.print().await?;
+    // hc.do_post("/api/reward-claims", json!({
+    //     "mission_id": "a0008dda-0100-deff-a12d-b5bf10013831",
+    //     "coin_network_id": "22222222-0000-0000-0000-000000000001",
+    //     "amount": "0.00001",
+    //     "user_id": "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
+    //     "user_address": "nomnomnom.testnet"
+    // })).await?.print().await?;
 
 
-    // near 
-    hc.do_post("/api/reward-claims", json!({
-        "mission_id": "a0002dda-0100-deff-a12d-b5bf10013831",
-        "coin_network_id": "33333333-9c58-47f8-9a0f-2d0c8d3f807f",
-        "amount": "1000",
-        "user_id": "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
-        "user_address": "nomnomnom.testnet"
-    })).await?.print().await?;
+    // // near 
+    // hc.do_post("/api/reward-claims", json!({
+    //     "mission_id": "a0002dda-0100-deff-a12d-b5bf10013831",
+    //     "coin_network_id": "33333333-9c58-47f8-9a0f-2d0c8d3f807f",
+    //     "amount": "1000",
+    //     "user_id": "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
+    //     "user_address": "nomnomnom.testnet"
+    // })).await?.print().await?;
 
     // hc.do_get("/api/reward_claims").await?.print().await?;
     // hc.do_get("/api/reward_claims/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d").await?.print().await?;

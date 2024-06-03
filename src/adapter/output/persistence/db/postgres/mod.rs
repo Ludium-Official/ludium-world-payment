@@ -21,8 +21,12 @@ impl PostgresDbManager {
             deadpool_diesel::Runtime::Tokio1,
         );
         let pool = Pool::builder(manager)
+            .max_size(16)   // 최대 connection 수
             .build()
-            .map_err(|e| Error::from(adapt_db_error(e)))?;
+            .map_err(|e| {
+                tracing::error!("Failed to build pool: {:?}", e);
+                Error::from(adapt_db_error(e))
+            })?;
 
         Ok(PostgresDbManager {
             db_pool: pool,

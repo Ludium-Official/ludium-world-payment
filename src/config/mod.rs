@@ -73,8 +73,15 @@ async fn init_config() -> Config {
             .unwrap(),
     };
 
+    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let databse_name = if cfg!(test) {
+        env::var("POSTGRES_TEST_DB").expect("POSTGRES_TEST_DB must be set")
+    } else {
+        env::var("POSTGRES_DB").expect("POSTGRES_DB must be set")
+    };
+
     let database_config = DatabaseConfig {
-        url: env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+        url: format!("{}/{}", db_url, databse_name)
     };
 
     let near_network_config = NearNetworkConfig::init();

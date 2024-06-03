@@ -7,12 +7,15 @@ mod config;
 mod usecase;
 mod state; 
 
+use std::net::IpAddr;
+use std::str::FromStr;
+use std::{net::SocketAddr, path::PathBuf};
 use std::sync::Arc;
 use adapter::input::web::middleware::permission;
 use axum::{middleware, Router};
+use axum_server::tls_rustls::RustlsConfig;
 use config::log::request_logging_middleware;
 use state::AppState;
-use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use crate::{
     adapter::input::{
@@ -29,20 +32,20 @@ async fn main() -> Result<()>{
     let config = config().await;
     let app_state = Arc::new(AppState::new(&config).await?);
     
-    let mut routes_apis = routes_hello::routes()
-        .merge(web::routes_coin::routes(Arc::clone(&app_state)));
+    let mut routes_all = Router::new()
+        .merge(routes_hello::routes());
     let mut routes_auth_apis = web::routes_network::routes(Arc::clone(&app_state))
         .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))
+        .merge(web::routes_coin::routes(Arc::clone(&app_state)))
         .route_layer(middleware::from_fn(permission::mw_require_auth));
 
     if config.is_local() {
         tracing::debug!("Running in local mode");
-        routes_apis = routes_apis.merge(web::_dev_routes_login::routes());
+        routes_all = routes_all.merge(web::_dev_routes_login::routes());
         routes_auth_apis = routes_auth_apis.merge(web::_dev_routes_user::routes(Arc::clone(&app_state)));
     }
 
-    let routes_all = Router::new()
-        .nest("/api", routes_apis)
+    routes_all = routes_all
         .nest("/api", routes_auth_apis)
         .layer(middleware::map_response(response::mapper))
         .layer(request_logging_middleware())
@@ -53,10 +56,33 @@ async fn main() -> Result<()>{
         .layer(CookieManagerLayer::new())
         .fallback_service(routes_static());
 
-    let listener = TcpListener::bind(format!("{}:{}", config.server_host(), config.server_port())).await.unwrap();
-    tracing::info!("listening on http://{}", listener.local_addr().unwrap());
 
-    axum::serve(listener, routes_all.into_make_service()).await.unwrap();
+    let ip_addr = IpAddr::from_str(config.server_host()).unwrap();
+    let addr = SocketAddr::from((ip_addr, config.server_port()));
+    tracing::info!("listening on {}", addr);
+
+    if config.is_local() {
+        axum_server::bind(addr)
+        .serve(routes_all.into_make_service())
+        .await
+        .unwrap();
+    } else {
+        let tls_config = RustlsConfig::from_pem_file(
+            PathBuf::from("./self_signed_certs")
+                .join("cert.pem"),
+            PathBuf::from("./self_signed_certs")
+                .join("key.pem"),
+        )
+        .await
+        .unwrap();
+
+        tracing::info!("TLS file loaded");
+
+        axum_server::bind_rustls(addr, tls_config)
+        .serve(routes_all.into_make_service())
+        .await
+        .unwrap();
+    }
 
     Ok(())
 }

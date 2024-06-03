@@ -19,6 +19,11 @@ pub async fn init_test() -> PostgresDbManager {
 	static DB_MANAGER: OnceCell<PostgresDbManager> = OnceCell::const_new();
     let config = config().await;
 
+	// hard check
+	if !config.db_url().contains("temp_test"){
+		panic!("db_url should contain 'temp_test'");
+	}
+
     DB_MANAGER.get_or_init(|| async {
         PostgresDbManager::new(&config.db_url()).await.unwrap()
     }).await;
