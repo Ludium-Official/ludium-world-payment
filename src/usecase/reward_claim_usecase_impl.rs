@@ -1,11 +1,7 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
 use async_trait::async_trait;
 use bigdecimal::{ToPrimitive, BigDecimal};
-// use deadpool_diesel::postgres::Object;
-// use near_crypto::{InMemorySigner, PublicKey, SecretKey};
-// use near_fetch::signer::ExposeAccountId;
-// use near_primitives::{action::TransferAction, types::Balance, views::FinalExecutionOutcomeView};
-// use serde_json::json;
+use tokio::time::sleep;
 use uuid::Uuid;
 use crate::{
     adapter::output::near::rpc_client::NearRpcManager, domain::model::{
@@ -19,17 +15,7 @@ use crate::{
 use super::{error::{Error, Result}, utrait::near_usecase::NearUsecase};
 use super::utrait::reward_claim_usecase::RewardClaimUsecase;
 use std::str::FromStr;
-// use near_primitives::views::TxExecutionStatus;
-// use near_primitives::signable_message::SignableMessageType;
-// use near_primitives::signable_message::SignableMessage;
-// use near_primitives::types::BlockHeight;
-// use near_primitives::action::delegate::NonDelegateAction;
-// use near_primitives::action::delegate::DelegateAction;
 use near_primitives::types::AccountId;
-// use near_primitives::action::Action;
-
-// use base64::engine::general_purpose::STANDARD_NO_PAD as BASE64_ENGINE;
-// use base64::Engine;
 
 pub struct RewardClaimUsecaseImpl<D: DbManager, R: RewardClaimRepository, C: CoinNetworkRepository, U: NearUsecase> {
     db_manager: Arc<D>,
@@ -94,7 +80,7 @@ where
 
     // actually, at this time don't need to meta_tx logic, just send_tx is good. but for the future, I will keep this relayer code
     async fn create_reward_claim(&self, user_id: Uuid, payload: NewRewardClaimPayload) -> Result<CombinedRewardClaimResponse> {
-        tracing::debug!("create_reward_claim");
+        tracing::debug!("create_reward_claim {:}", user_id);
         let db_manager = &self.db_manager;
         
         let (coin_network, coin, network) = self.coin_network_repo
@@ -105,6 +91,7 @@ where
             .await
             .map_err(|_| Error::CoinNetworkIdNotFound { id: payload.coin_network_id.to_string() })?;
 
+        // --- user 당 mission 중복 요청 방지 
         if self.reward_claim_repo.get_by_mission_and_user(db_manager.get_connection().await?.into(), payload.mission_id, payload.user_id).await.is_ok() {
             return Err(Error::RewardClaimDuplicate { mission_id: payload.mission_id.to_string(), user_id: payload.user_id.to_string() });
         }
@@ -113,6 +100,35 @@ where
         let amount_decimal = BigDecimal::from_str(&payload.amount).expect("Invalid amount format");
         let amount_in_smallest_unit = (amount_decimal * scale_factor).to_u128().ok_or(Error::InvalidAmountConversion)?;
 
+        // --- READY
+        let new_reward_claim = NewRewardClaim {
+            id: Uuid::new_v4(),
+            mission_id: payload.mission_id,
+            coin_network_id: payload.coin_network_id,
+            reward_claim_status: RewardClaimStatus::Ready,
+            amount: amount_in_smallest_unit as i64,
+            user_id: payload.user_id,
+            user_address: payload.user_address.clone(),
+        };
+
+        let reward_claim = self.reward_claim_repo.insert(db_manager.get_connection().await?.into(), new_reward_claim).await?;
+
+        // --- user 당 coin_network 이미 처리중인 PENDING_APPROVAL 상태 확인 및 스핀락 로직 (5회 시도(10s) 후 실패시 에러 반환)
+        let mut attempts = 0;
+        while self.reward_claim_repo.has_pending_approval(db_manager.get_connection().await?.into(), payload.user_id, payload.coin_network_id).await? {
+            tracing::debug!("transcation waiting... - user_id: {}, coin_network_id: {}", payload.user_id, payload.coin_network_id); 
+            if attempts >= 5 {
+                return Err(Error::TranscationTimeoutFailed { message: format!("wating transcation timeout failed - user_id: {}, coin_network_id: {}", payload.user_id, payload.coin_network_id)});
+            }
+            attempts += 1;
+            sleep(Duration::from_secs(5)).await;
+        }
+
+        // 1. reward_claims 에서 해당 user에게 해당 contract 전송 여부 확인 
+                // 1-1. 있다면 그냥 바로 ft_transfer
+                // 1-2. 없다면, storage_deposit_of로 해당 user가 해당 contract 잔액 조회했는지 확인 
+                    // 1-2-1. 이미 deposit 했으면 ft_transfer
+                    // 1-2-2. 없다면 deposit 후 ft_transfer
         let tx_result_response: Result<TransactionResultResponse>;
         match coin.coin_type {
             CoinType::Native => {
@@ -123,6 +139,17 @@ where
                     }
                 ).await?;
 
+                if !signed_delegate_action.verify() {
+                    return Err(Error::TranscationActionVerifyFailed)
+                }
+
+                // --- PENDING_APPROVAL
+                self.reward_claim_repo.update_status(
+                    db_manager.get_connection().await?.into(),
+                    reward_claim.id,
+                    RewardClaimStatus::PendingApproval
+                ).await?;
+
                 tx_result_response =  self.near_usecase
                     .process_signed_delegate_action(Arc::clone(&self.near_rpc_manager), &signed_delegate_action, None).await;
             }
@@ -130,14 +157,14 @@ where
                 tracing::debug!("send delegate tx");
                 let contract_address = coin_network
                     .contract_address.as_ref().ok_or_else(|| Error::InternalServerError { message: "contract_address is empty".to_string() })?;
-
+                
                 // todo: if user_address is registered, skip this storage_deposit step
                 let deposit_result = self.near_rpc_manager.send_storage_deposit(
                     AccountId::from_str(contract_address).unwrap(),
                     AccountId::from_str(payload.user_address.as_str()).unwrap(),
                 ).await?;
-                println!("deposit_result: {:?}", deposit_result);
-
+                // println!("deposit_result: {:?}", deposit_result);
+                    
                 let signed_delegate_action = self.near_rpc_manager.create_transfer_signed_delegate_action(
                     TransferActionType::FtTransfer {
                         ft_contract_id: AccountId::from_str(contract_address).unwrap(),
@@ -145,7 +172,16 @@ where
                         amount_in_smallest_unit,
                     }
                 ).await?;
-                signed_delegate_action.verify();
+                if !signed_delegate_action.verify() {
+                    return Err(Error::TranscationActionVerifyFailed)
+                }
+
+                // --- PENDING_APPROVAL
+                self.reward_claim_repo.update_status(
+                    db_manager.get_connection().await?.into(),
+                    reward_claim.id,
+                    RewardClaimStatus::PendingApproval
+                ).await?;
 
                 tx_result_response =  self.near_usecase
                     .process_signed_delegate_action(Arc::clone(&self.near_rpc_manager), &signed_delegate_action, None).await;
@@ -165,17 +201,8 @@ where
                     reward_claim_status = RewardClaimStatus::TransactionApproved;
                 }
 
-                let new_reward_claim = NewRewardClaim {
-                    id: Uuid::new_v4(),
-                    mission_id: payload.mission_id,
-                    coin_network_id: payload.coin_network_id,
-                    reward_claim_status: reward_claim_status,
-                    amount: amount_in_smallest_unit as i64,
-                    user_id: payload.user_id,
-                    user_address: payload.user_address,
-                };
-
-                let reward_claim = self.reward_claim_repo.insert(db_manager.get_connection().await?.into(), new_reward_claim).await?;
+                // --- TRANSACTION_APPROVED or TRANSACTION_FAILED
+                let reward_claim = self.reward_claim_repo.update_status(db_manager.get_connection().await?.into(), reward_claim.id, reward_claim_status).await?;
                 let new_reward_claim_detail = NewRewardClaimDetail {
                     id: Uuid::new_v4(),
                     reward_claim_id: reward_claim.id,

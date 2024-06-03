@@ -2,7 +2,7 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, RewardClaim}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
+use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
 use crate::port::output::reward_claim_repository::RewardClaimRepository;
 use super::{adapt_db_error, reward_claim};
 use crate::adapter::output::persistence::db::error::{Result, Error};
@@ -53,6 +53,31 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
+
+    async fn update_status(&self, conn: Object, reward_claim_id: Uuid, status: RewardClaimStatus) -> Result<RewardClaim>{
+        conn.interact(move |conn| {
+            diesel::update(reward_claim::table)
+                .filter(reward_claim::id.eq(reward_claim_id))
+                .set(reward_claim::reward_claim_status.eq(status))
+                .get_result::<RewardClaim>(conn)
+        })
+        .await?
+        .map_err(|e| Error::from(adapt_db_error(e)))
+    }
+
+    async fn has_pending_approval(&self, conn: Object, user_id: Uuid, coin_network_id: Uuid) -> Result<bool>{
+        conn.interact(move |conn| {
+            reward_claim::table
+                .filter(reward_claim::user_id.eq(user_id))
+                .filter(reward_claim::coin_network_id.eq(coin_network_id))
+                .filter(reward_claim::reward_claim_status.eq(RewardClaimStatus::PendingApproval))
+                .first::<RewardClaim>(conn)
+                .optional()
+        })
+        .await?
+        .map(|claim| claim.is_some())
+        .map_err(|e| Error::from(adapt_db_error(e)))
+    }
 }
 
 
@@ -96,7 +121,6 @@ mod tests {
 
         Ok(())
     }
-
 
     #[serial]
     #[tokio::test]

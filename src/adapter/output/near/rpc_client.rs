@@ -1,4 +1,6 @@
 use std::str::FromStr;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use async_trait::async_trait;
 use near_fetch::signer::KeyRotatingSigner;
@@ -21,6 +23,7 @@ pub struct NearRpcManager {
     pub signer: KeyRotatingSignerWrapper,
     pub whitelisted_contracts: Vec<String>,
     pub whitelisted_senders: Vec<String>,
+    pub nonce_mutex: Arc<Mutex<u64>>,
 }
 
 impl NearRpcManager {
@@ -29,13 +32,27 @@ impl NearRpcManager {
         whitelisted_contracts: Vec<String>,
         whitelisted_senders: Vec<String>,
     ) -> Self {
-        Self { client, signer, whitelisted_contracts, whitelisted_senders }
+        Self { client, signer, whitelisted_contracts, whitelisted_senders, nonce_mutex: Arc::new(Mutex::new(0)) }
     }
 
     pub fn signer(&self) -> &KeyRotatingSigner{
         self.signer.inner()
     }
 
+    async fn get_next_nonce(&self) -> Result<u64> {
+        let mut nonce = self.nonce_mutex.lock().unwrap();
+        *nonce += 20;
+        Ok(*nonce)
+    }
+
+    // async fn get_next_nonce(&self, account_id: &AccountId, public_key: &str) -> Result<u64> {
+    //     let (nonce, _block_hash, _) = self
+    //         .client
+    //         .fetch_nonce(account_id, public_key)
+    //         .await
+    //         .map_err(|e| Error::InternalServerError { message: e.to_string() })?;
+    //     Ok(nonce + 1)
+    // }
 }
 
 #[async_trait]
@@ -118,7 +135,6 @@ impl RpcClient for NearRpcManager {
         }
     }
 
-
     async fn create_signed_delegate_action(
         &self,
         receiver_id: AccountId,
@@ -133,6 +149,10 @@ impl RpcClient for NearRpcManager {
             .await
             .unwrap();
 
+        let add_nonce = self.get_next_nonce().await?;
+        let last_nonce = nonce + add_nonce;
+        tracing::debug!("nonce: {}, add_nonce: {}, last_nonce: {}", nonce, add_nonce, last_nonce);
+
         let delegate_action = DelegateAction {
             sender_id: relayer_account_id.clone(),
             receiver_id: receiver_id,
@@ -140,7 +160,7 @@ impl RpcClient for NearRpcManager {
                 .into_iter()
                 .map(|a| NonDelegateAction::try_from(a).unwrap())
                 .collect(),
-            nonce: nonce + 1,
+            nonce: last_nonce,
             max_block_height: 2000000000 as BlockHeight,
             public_key: public_key.clone(),
         };

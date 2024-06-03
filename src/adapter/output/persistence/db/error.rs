@@ -19,13 +19,20 @@ pub fn adapt_db_error<T: PgError>(error: T) -> Error {
 
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error {
+    pub fn client_status_and_error(&self) -> (axum::http::StatusCode, String) {
         match self {
-            Error::ConnectionError(msg) => write!(f, "Connection error: {}", msg),
-            Error::QueryError(msg) => write!(f, "Query error: {}", msg),
-            Error::PoolError(msg) => write!(f, "Pool error: {}", msg),
-            Error::BuildError(msg) => write!(f, "Build error: {}", msg),
+            Error::ConnectionError(message) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, message.clone()),
+            Error::QueryError(message) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, message.clone()),
+            Error::PoolError(message) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, message.clone()),
+            Error::BuildError(message) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, message.clone()),
         }
     }
+
 }
 
 pub trait PgError {

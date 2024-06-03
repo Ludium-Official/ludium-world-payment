@@ -13,6 +13,8 @@ use crate::adapter::output::persistence::db::schema::reward_claim;
 #[derive(Clone, Debug, Serialize, Deserialize, DbEnum)]
 #[ExistingTypePath = "crate::adapter::output::persistence::db::schema::sql_types::RewardClaimStatus"]
 pub enum RewardClaimStatus {
+    #[db_rename = "READY"]
+    Ready, 
     #[db_rename = "PENDING_APPROVAL"]
     PendingApproval,
     #[db_rename = "TRANSACTION_APPROVED"]
@@ -24,6 +26,7 @@ pub enum RewardClaimStatus {
 impl From<String> for RewardClaimStatus {
     fn from(reward_claim_status: String) -> Self {
         match reward_claim_status.to_uppercase().as_str() {
+            "READY" => RewardClaimStatus::Ready,
             "PENDING_APPROVAL" => RewardClaimStatus::PendingApproval,
             "TRANSACTION_APPROVED" => RewardClaimStatus::TransactionApproved,
             "TRANSACTION_FAILED" => RewardClaimStatus::TransactionFailed,
@@ -35,6 +38,7 @@ impl From<String> for RewardClaimStatus {
 impl PartialEq for RewardClaimStatus {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            (RewardClaimStatus::Ready, RewardClaimStatus::Ready) => true,
             (RewardClaimStatus::PendingApproval, RewardClaimStatus::PendingApproval) => true,
             (RewardClaimStatus::TransactionApproved, RewardClaimStatus::TransactionApproved) => true,
             (RewardClaimStatus::TransactionFailed, RewardClaimStatus::TransactionFailed) => true,

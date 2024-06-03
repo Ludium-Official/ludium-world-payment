@@ -16,5 +16,4 @@ pub trait NearUsecase {
         signed_delegate_action: &SignedDelegateAction,
         _wait_until: Option<TxExecutionStatus>,
     ) -> Result<TransactionResultResponse>;
-
 }
