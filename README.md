@@ -36,9 +36,17 @@ cd ludium-world-payment
 cp .env.example .env.local
 ```
 
-3. run app & db container 
+3. Set up near multi account_keys 
+> check the [near/pagoda-relayer-rs readme](https://github.com/near/pagoda-relayer-rs#:~:text=Multiple%20Key%20Generation%20%2D%20OPTIONAL%2C%20but%20recommended%20for%20high%20throughput%20to%20prevent%20nonce%20race%20conditions)
+
+You will need to create and set your own multi account_keys in the `/account_keys` folder, and set the `relayer_account_id`, `keys_filename` to match the account you set in `config.toml`.
+
+
+4. run app & db container 
 ```sh
 docker-compose -f ./docker-compose.local.yml up -d
+
+// or just `cargo run`
 ```
 
 ### For Development
@@ -62,7 +70,7 @@ diesel print-schema --database-url=postgres://postgres:postgres@localhost:5432/l
 ```
 
 ### MultipleKey Generation for On-chain Relayer signer
-check the [near/pagoda-relayer-rs readme](https://github.com/near/pagoda-relayer-rs#:~:text=Multiple%20Key%20Generation%20%2D%20OPTIONAL%2C%20but%20recommended%20for%20high%20throughput%20to%20prevent%20nonce%20race%20conditions)
+
 
 
 ## Deployment

@@ -2,7 +2,9 @@
 .env*
 !.env.example
 .vscode
-/account_keys
+/account_keys/*
+
 
 /tests/data/*
 /self_signed_certs/*
+TODO.md
