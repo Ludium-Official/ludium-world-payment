@@ -4,7 +4,7 @@ use serde::Deserialize;
 #[allow(unused)] // authentication code will be added later
 #[derive(Debug, Clone, Deserialize)]
 pub struct UserInfo {
-    user_id: String,
+    id: String,
     adm: bool,
     prv: bool,
     crt: bool,
@@ -12,7 +12,7 @@ pub struct UserInfo {
 
 impl UserInfo {
     pub fn user_id(&self) -> &str {
-        &self.user_id
+        &self.id
     }
 
 }

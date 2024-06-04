@@ -8,24 +8,25 @@ fn create_headers(header_type: &str,
 ) -> HeaderMap {
     let x_user_right_value = match header_type {
         "admin" => json!({
-            "user_id": "00000000-0000-0000-0000-000000000001",
+            "id": "00000000-0000-0000-0000-000000000001",
             "adm":true,"prv":true,"crt":true
         }),
         "provider" => json!({
-            "user_id": "00000000-0000-0000-0000-000000000002",
+            "id": "00000000-0000-0000-0000-000000000002",
             "adm":false,"prv":true,"crt":true
         }),
         "contributor" => json!({
-            "user_id": "00000000-0000-0000-0000-000000000003",
+            "id": "00000000-0000-0000-0000-000000000003",
             "adm":false,"prv":false,"crt":true
         }),
         _ => json!({
-            "user_id": "00000000-0000-0000-0000-000000000003",
+            "id": "00000000-0000-0000-0000-000000000003",
             "adm":false,"prv":false,"crt":true
         }),
     };
 
     let mut headers = HeaderMap::new();
+
     headers.insert("x-user-right", HeaderValue::from_str(&x_user_right_value.to_string()).unwrap());
     headers
 }
