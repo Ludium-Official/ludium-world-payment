@@ -22,8 +22,7 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .first::<(CoinNetwork, Coin, Network)>(conn)
                 .map_err(adapt_db_error)
         })
-        .await?
-        .map_err(|e| Error::from(e));
+        .await?;
 
         Ok(result.map_err(|e| Error::from(e))?)
     }
@@ -37,14 +36,12 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .load::<(CoinNetwork, Coin, Network)>(conn)
                 .map_err(adapt_db_error)
         })
-        .await?
-        .map_err(|e| Error::from(e));
+        .await?;
 
         Ok(result.map_err(|e| Error::from(e))?)
     }
 
     async fn list_all_by_network_code(&self, conn: Object, network_code: String) -> Result<Vec<(CoinNetwork, Coin, Network)>> {
-        tracing::info!("list_all_by_network_code: network_code={}", network_code);
         conn.interact(move |conn| {
             coin::table
                 .inner_join(coin_network::table.on(coin_network::coin_id.eq(coin::id)))
@@ -52,9 +49,9 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .filter(network::code.ilike(network_code))
                 .select((coin_network::all_columns, coin::all_columns, network::all_columns))
                 .load::<(CoinNetwork, Coin, Network)>(conn)
+                .map_err(adapt_db_error)
         })
         .await?
-        .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
     async fn list_all_by_ids(&self, conn: Object, coin_network_ids: Vec<Uuid>) -> Result<Vec<(CoinNetwork, Coin, Network)>> {
@@ -67,8 +64,7 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
                 .load::<(CoinNetwork, Coin, Network)>(conn)
                 .map_err(adapt_db_error)
         })
-        .await?
-        .map_err(|e| Error::from(e));
+        .await?;
     
         Ok(result.map_err(|e| Error::from(e))?)
     }
@@ -83,3 +79,87 @@ impl CoinNetworkRepository for PostgresCoinNetworkRepository {
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 }
+
+
+// region: --- coin network repository tests 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{adapter::output::persistence::db::_dev_utils, port::output::DbManager};
+    use uuid::Uuid;
+    use serial_test::serial;
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_with_coin_and_network() -> Result<()> {
+        let db_manager = _dev_utils::init_test().await;
+        let repo = PostgresCoinNetworkRepository;
+
+        let coin_network_id = Uuid::parse_str("22222222-0000-0000-0000-000000000001").unwrap();
+        
+        let result = repo.get_with_coin_and_network(db_manager.get_connection().await?, coin_network_id).await?;
+        assert_eq!(result.0.id, coin_network_id);
+        assert_eq!(result.1.name, "USD Tether");
+        assert_eq!(result.2.name, "NEAR Protocol");
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_list_all() -> Result<()> {
+        let db_manager = _dev_utils::init_test().await;
+        let repo = PostgresCoinNetworkRepository;
+
+        let result = repo.list_all(db_manager.get_connection().await?).await?;
+        assert!(result.len() >= 3);
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_list_all_by_network_code() -> Result<()> {
+        let db_manager = _dev_utils::init_test().await;
+        let repo = PostgresCoinNetworkRepository;
+
+        let result = repo.list_all_by_network_code(db_manager.get_connection().await?, "NEAR".to_string()).await?;
+        assert!(result.len() >= 3);
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_list_all_by_ids() -> Result<()> {
+        let db_manager = _dev_utils::init_test().await;
+        let repo = PostgresCoinNetworkRepository;
+
+        let coin_network_ids = vec![
+            Uuid::parse_str("22222222-0000-0000-0000-000000000001").unwrap(),
+            Uuid::parse_str("22222222-9c58-47f8-9a0f-2d0c8d3f807f").unwrap(),
+        ];
+
+        let result = repo.list_all_by_ids(db_manager.get_connection().await?, coin_network_ids).await?;
+        assert_eq!(result.len(), 2);
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_list_by_coin_id() -> Result<()> {
+        let db_manager = _dev_utils::init_test().await;
+        let repo = PostgresCoinNetworkRepository;
+
+        let coin_id = Uuid::parse_str("11111111-0000-0000-0000-000000000001").unwrap();
+
+        let result = repo.list_by_coin_id(db_manager.get_connection().await?, coin_id).await?;
+        assert!(result.len() >= 1);
+
+        Ok(())
+    }
+}
+
+// endregion: --- coin network repository tests 

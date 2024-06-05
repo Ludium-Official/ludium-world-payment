@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -13,8 +14,8 @@ use crate::adapter::output::persistence::db::schema::reward_claim;
 #[derive(Clone, Debug, Serialize, Deserialize, DbEnum)]
 #[ExistingTypePath = "crate::adapter::output::persistence::db::schema::sql_types::RewardClaimStatus"]
 pub enum RewardClaimStatus {
-    #[db_rename = "PENDING_APPROVAL"]
-    PendingApproval,
+    #[db_rename = "READY"]
+    Ready, 
     #[db_rename = "TRANSACTION_APPROVED"]
     TransactionApproved,
     #[db_rename = "TRANSACTION_FAILED"]
@@ -24,10 +25,10 @@ pub enum RewardClaimStatus {
 impl From<String> for RewardClaimStatus {
     fn from(reward_claim_status: String) -> Self {
         match reward_claim_status.to_uppercase().as_str() {
-            "PENDING_APPROVAL" => RewardClaimStatus::PendingApproval,
+            "READY" => RewardClaimStatus::Ready,
             "TRANSACTION_APPROVED" => RewardClaimStatus::TransactionApproved,
             "TRANSACTION_FAILED" => RewardClaimStatus::TransactionFailed,
-            _ => RewardClaimStatus::PendingApproval,
+            _ => RewardClaimStatus::Ready,
         }
     }
 }
@@ -35,7 +36,7 @@ impl From<String> for RewardClaimStatus {
 impl PartialEq for RewardClaimStatus {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (RewardClaimStatus::PendingApproval, RewardClaimStatus::PendingApproval) => true,
+            (RewardClaimStatus::Ready, RewardClaimStatus::Ready) => true,
             (RewardClaimStatus::TransactionApproved, RewardClaimStatus::TransactionApproved) => true,
             (RewardClaimStatus::TransactionFailed, RewardClaimStatus::TransactionFailed) => true,
             _ => false,
@@ -50,7 +51,7 @@ pub struct RewardClaim {
     pub mission_id: Uuid,
     pub coin_network_id: Uuid,
     pub reward_claim_status: RewardClaimStatus,
-    pub amount: i64,
+    pub amount: BigDecimal,
     pub user_id: Uuid,
     pub user_address: String,
     pub created_date: NaiveDateTime,
@@ -64,7 +65,7 @@ pub struct NewRewardClaim {
     pub mission_id: Uuid,
     pub coin_network_id: Uuid,
     pub reward_claim_status: RewardClaimStatus,
-    pub amount: i64,   
+    pub amount: BigDecimal,   
     pub user_id: Uuid,
     pub user_address: String,
 }

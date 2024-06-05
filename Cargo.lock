@@ -3465,6 +3465,7 @@ dependencies = [
  "near-crypto",
  "near-fetch",
  "near-jsonrpc-client",
+ "near-jsonrpc-primitives",
  "near-primitives",
  "once_cell",
  "reqwest 0.11.27",

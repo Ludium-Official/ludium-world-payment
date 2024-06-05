@@ -1,7 +1,7 @@
 use near_fetch::signer::KeyRotatingSigner;
 use near_crypto::InMemorySigner;
 use serde::Deserialize;
-use std::{fmt::Debug, path::PathBuf};
+use std::{fmt::Debug, path::PathBuf, sync::Arc};
 use ::config::{Config, File as ConfigFile};
 
 // region: --- ApiKey
@@ -97,7 +97,9 @@ impl NearNetworkConfig {
 // region: --- KeyRotatingSignerWrapper
 
 #[derive(Clone)]
-pub struct KeyRotatingSignerWrapper(KeyRotatingSigner);
+pub struct KeyRotatingSignerWrapper{
+    signer: Arc<KeyRotatingSigner>,
+}
 
 impl Debug for KeyRotatingSignerWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -107,11 +109,13 @@ impl Debug for KeyRotatingSignerWrapper {
 
 impl KeyRotatingSignerWrapper {
     pub fn from_signers(signers: Vec<InMemorySigner>) -> Self {
-        KeyRotatingSignerWrapper(KeyRotatingSigner::from_signers(signers))
+        KeyRotatingSignerWrapper {
+            signer: Arc::new(KeyRotatingSigner::from_signers(signers)),
+        }
     }
 
-    pub fn inner(&self) -> &KeyRotatingSigner {
-        &self.0
+    pub fn inner(&self) -> Arc<KeyRotatingSigner> {
+        Arc::clone(&self.signer)
     }
 }
 // endregion: --- KeyRotatingSignerWrapper

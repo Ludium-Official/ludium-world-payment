@@ -75,45 +75,11 @@ impl Error {
 			),
 
 			// -- Output
-			Self::Postgres { .. } => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				"PostgresDb Error".to_string(),
-			),
-
-			Self::Near(near::error::Error::TransactionNotExecuted { message }) => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				message.to_string(),
-			),
-			Self::Near(near::error::Error::NotWhitelisted { message }) => (
-				StatusCode::FORBIDDEN,
-				message.to_string(),
-			),
+			Self::Postgres(error) => error.client_status_and_error(),
+			Self::Near(error) => error.client_status_and_error(),
 
 			// -- Usecase
-			Self::Usecase(usecase::error::Error::InvalidClaimStatusForReject) => (
-				StatusCode::BAD_REQUEST,
-				"Invalid Claim Status For Reject".to_string(),
-			),
-			Self::Usecase(usecase::error::Error::InvalidClaimStatusForApprove) => (
-				StatusCode::BAD_REQUEST,
-				"Invalid Claim Status For Approve".to_string(),
-			),
-			Self::Usecase(usecase::error::Error::CoinNetworkIdNotFound { id }) => (
-				StatusCode::NOT_FOUND,
-				format!("Coin Network Id Not Found: {}", id)
-			),
-			Self::Usecase(usecase::error::Error::RewardClaimDuplicate { mission_id, user_id }) => (
-				StatusCode::BAD_REQUEST,
-				format!("Reward Claim Duplicate: Mission Id: {}, User Id: {}", mission_id, user_id)
-			),
-			Self::Usecase(usecase::error::Error::InvalidEncodedSignedDelegateDeserialization { message }) => (
-				StatusCode::BAD_REQUEST,
-				message.to_string(),
-			),
-			Self::Usecase(usecase::error::Error::InternalServerError { message }) => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				message.to_string(),
-			),
+			Self::Usecase(error) => error.client_status_and_error(),
 
 			// -- Fallback.
 			_ => (
