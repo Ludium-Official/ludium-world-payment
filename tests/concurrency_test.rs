@@ -20,6 +20,10 @@ fn create_headers(header_type: &str,
             "id": "00000000-0000-0000-0000-000000000003",
             "adm":false,"prv":false,"crt":true
         }),
+        "random" => json!({
+            "id": Uuid::new_v4().to_string(),
+            "adm":true,"prv":true,"crt":true
+        }),
         _ => json!({
             "id": "00000000-0000-0000-0000-000000000003",
             "adm":false,"prv":false,"crt":true
@@ -51,8 +55,8 @@ impl TestResults {
 
     fn record(&self, status: &str) {
         match status {
-            "TransactionApproved" => self.tx_approved.fetch_add(1, Ordering::Relaxed),
-            "TransactionFailed" => self.tx_failed.fetch_add(1, Ordering::Relaxed),
+            "TRANSACTION_APPROVED" => self.tx_approved.fetch_add(1, Ordering::Relaxed),
+            "TRANSACTION_FAILED" => self.tx_failed.fetch_add(1, Ordering::Relaxed),
             "ApiError" => self.api_error.fetch_add(1, Ordering::Relaxed),
             _ => 0,
         };
@@ -102,40 +106,49 @@ impl TestResults {
             Transaction Failed: 0
             Api Error: 14
  */
-#[tokio::test]
-#[ignore]
-async fn test_mass_reward() -> Result<()> {
-    let headers = create_headers("provider");
+
+async fn create_random_user() -> Result<Arc<httpc_test::Client>> {
+    let headers = create_headers("random");
     let client = reqwest::Client::builder()
         .default_headers(headers);
-    
     let hc: Arc<httpc_test::Client> = Arc::new(httpc_test::new_client_with_reqwest(
         "http://localhost:8080",
         client
     )?);
 
-    hc.do_get("/hello").await?.print().await?;
-
-    // login
     hc.do_post("/api/login", json!({
         "username": "demo1",
         "password": "welcome"
-    })).await?.print().await?;
+    })).await?;
 
+    Ok(hc)
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_mass_reward() -> Result<()> {
     let mut handles: Vec<JoinHandle<Result<String>>> = Vec::new();
-
     let mission_ids = [
         "a0008dda-0101-d2ff-a12d-b5bf10013812",
         "a0008dda-0101-d2ff-a12d-b5bf10013813",
         "a0008dda-0101-d2ff-a12d-b5bf10013814",
     ];
+    
     let len = 500;
+
+    let mut user_clients = Vec::new();
+    for _ in 0..len {
+        let client = create_random_user().await?;
+        user_clients.push(client);
+    }
+
+    std::thread::sleep(std::time::Duration::from_secs(2));
+
     for i in 0..len {
-        let hc_clone = Arc::clone(&hc);
+        let hc_clone: Arc<httpc_test::Client> = Arc::clone(&user_clients[i]);
         let handle = tokio::task::spawn_blocking(move || {
             let mission_id = mission_ids[i % 3];
-            let user_id = Uuid::new_v4().to_string();
-            tokio::runtime::Handle::current().block_on(send_reward_claim(hc_clone, &mission_id, &user_id))
+            tokio::runtime::Handle::current().block_on(send_reward_claim(hc_clone, &mission_id))
         });
         handles.push(handle);
     }
@@ -164,39 +177,23 @@ async fn test_mass_reward() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_multi_reward() -> Result<()> {
-    let headers = create_headers("provider");
-    let client = reqwest::Client::builder()
-        .default_headers(headers);
-    
-    let hc: Arc<httpc_test::Client> = Arc::new(httpc_test::new_client_with_reqwest(
-        "http:/localhost:8080",
-        client
-    )?);
-
-    hc.do_get("/hello").await?.print().await?;
-
-    // login
-    hc.do_post("/api/login", json!({
-        "username": "demo1",
-        "password": "welcome"
-    })).await?.print().await?;
-
     let mut handles: Vec<JoinHandle<Result<String>>> = Vec::new();
 
-    let user_ids = [
-        "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
-        "bcd28999-2abc-0abc-1abc-b5bf1d8ee991",
-        "bcd28999-2abc-0abc-1abc-b5bf1d8ee992",
-        "00000000-0000-0000-0000-000000000012",
+    let user_clients = [
+        create_random_user().await?,
+        create_random_user().await?,
+        create_random_user().await?,
+        create_random_user().await?,
     ];
 
     let len = 1000;
     for i in 0..len {
-        let hc_clone: Arc<httpc_test::Client> = Arc::clone(&hc);
+        let user_client = &user_clients[i % 4];
+        let hc_clone: Arc<httpc_test::Client> = Arc::clone(&user_client);
         let handle = tokio::task::spawn_blocking(move || {
             let mission_id = "a0008dda-0101-d2ff-a12d-b5bf10013811";
-            let user_id = user_ids[i % 4];
-            tokio::runtime::Handle::current().block_on(send_reward_claim(hc_clone, &mission_id, &user_id))
+            
+            tokio::runtime::Handle::current().block_on(send_reward_claim(hc_clone, &mission_id))
         });
 
         handles.push(handle);
@@ -214,13 +211,12 @@ async fn test_multi_reward() -> Result<()> {
 
 // endregion: --- 동시성 테스트 2: 악의적인 공격
 
-async fn send_reward_claim(hc: Arc<httpc_test::Client>, mission_id: &str, user_id: &str) -> Result<String> {
+async fn send_reward_claim(hc: Arc<httpc_test::Client>, mission_id: &str) -> Result<String> {
     let response = hc.do_post("/api/reward-claims", json!({
         "mission_id": mission_id,
         // "coin_network_id": "22222222-0000-0000-0000-000000000001",
         "coin_network_id": "33333333-9c58-47f8-9a0f-2d0c8d3f807f",
         "amount": "0.00001",
-        "user_id": user_id,
         "user_address": "nomnomnom.testnet"
     })).await?;
 
@@ -228,7 +224,7 @@ async fn send_reward_claim(hc: Arc<httpc_test::Client>, mission_id: &str, user_i
 
     let body = response.json_body()?;
     
-    if response.status() != StatusCode::OK {
+    if response.status() != StatusCode::CREATED {
         return Ok("ApiError".to_string());
     }
 
