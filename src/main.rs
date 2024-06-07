@@ -36,7 +36,6 @@ async fn main() -> Result<()>{
     let app_state = Arc::new(AppState::new(&config).await?);
     
     let mut routes_all = Router::new()
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .merge(routes_hello::routes());
     let mut routes_auth_apis = web::routes_network::routes(Arc::clone(&app_state))
         .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))
@@ -48,6 +47,11 @@ async fn main() -> Result<()>{
         tracing::debug!("Running in local mode");
         routes_all = routes_all.merge(web::_dev_routes_login::routes());
         routes_auth_apis = routes_auth_apis.merge(web::_dev_routes_user::routes(Arc::clone(&app_state)));
+    }
+
+    if config.is_development() {
+        tracing::debug!("Running in development mode");
+        routes_all = routes_all.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }
 
     routes_all = routes_all

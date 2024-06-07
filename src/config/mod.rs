@@ -54,6 +54,10 @@ impl Config {
     pub fn is_local(&self) -> bool {
         self.run_mode == "local"
     }
+
+    pub fn is_development(&self) -> bool {
+        self.run_mode == "development" || self.is_local()
+    }
         
 }
 
