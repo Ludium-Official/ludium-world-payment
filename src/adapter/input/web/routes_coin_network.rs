@@ -2,6 +2,7 @@ use std::sync::Arc;
 use axum::extract::{Query, State};
 use axum::{Router, Json, routing::get};
 use serde::Deserialize;
+use utoipa::IntoParams;
 use crate::adapter::input::ctx::Ctx;
 use crate::domain::model::coin_network::CoinNetworkDetailsResponse;
 use crate::port::output::coin_network_repository::CoinNetworkRepository;
@@ -15,12 +16,23 @@ pub fn routes(state: Arc<AppState>) -> Router {
         .with_state(state)
 }
 
-#[derive(Deserialize)]
-struct NetworkCodeQuery {
+#[derive(Deserialize, IntoParams)]
+pub struct NetworkCodeQuery {
     network_code: Option<String>,
 }
 
-async fn list_coin_networks(
+#[utoipa::path(
+    get,
+    path = "/api/coin-networks",
+    params(NetworkCodeQuery),
+    responses(
+        (status = 200, description = "List of coin networks", body = Vec<CoinNetworkDetailsResponse>),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 500, description = "Internel Server Error", body = ErrorResponse)
+    ),
+    tag = "CoinNetwork"
+)]
+pub async fn list_coin_networks(
     State(state): State<Arc<AppState>>,
     _ctx: Ctx,
     Query(query): Query<NetworkCodeQuery>,

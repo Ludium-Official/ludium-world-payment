@@ -1,18 +1,19 @@
-use axum::{extract::Query, response::{Html, IntoResponse}, routing::get, Router};
-use serde::Deserialize;
+use axum::{response::{Html, IntoResponse}, routing::get, Router};
 
-
-#[derive(Debug, Deserialize)]
-struct HelloParams {
-	name: Option<String>,
-}
 
 pub fn routes() -> Router {
 	Router::new()
-		.route("/hello", get(handler_hello))
+		.route("/hello", get(hello))
 }
 
-async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
-	let name = params.name.as_deref().unwrap_or("World!");
-	Html(format!("Hello <strong>{name}</strong>"))
+#[utoipa::path(
+    get,
+    path = "/hello",
+    responses(
+        (status = 200, description = "hello")
+    ),
+	tag = "Hello"
+)]
+pub async fn hello() -> impl IntoResponse {
+	Html("Hello, I'm payment!")
 }

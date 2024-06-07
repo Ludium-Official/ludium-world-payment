@@ -114,7 +114,7 @@ impl NearRpcManager {
                 let receiver_id = AccountId::from_str(&user_address).unwrap();
                 let args = json!({
                     "receiver_id": receiver_id.to_string(),
-                    "amount": amount_in_smallest_unit.to_string()
+                    "amount": amount_in_smallest_unit.to_u128().unwrap().to_string(),
                 });
                 let function_call_action = FunctionCallAction {
                     method_name: "ft_transfer".to_string(),
@@ -178,7 +178,7 @@ impl NearRpcManager {
                                 },
                                 _ => {
                                     tracing::error!("{}", error_msg);
-                                    error_details.push(error_msg);
+                                    error_details.push(kind.to_string());
                                     error_occurred = true;
                                 }
                             }
@@ -282,12 +282,12 @@ impl RpcClient for NearRpcManager {
         transfer_action_type: TransferActionType,
         is_delegated: bool,
     ) -> Result<TransactionResultResponse> {
+        let (receiver_id, actions) = self.create_transfer_actions(transfer_action_type).await?;
+
         if is_delegated {
-            let (receiver_id, actions) = self.create_transfer_actions(transfer_action_type).await?;
             let signed_delegate_action = self.create_signed_delegate_action(receiver_id, actions).await?;
             self.process_signed_delegate_action(&signed_delegate_action, None).await
         } else {
-            let (receiver_id, actions) = self.create_transfer_actions(transfer_action_type).await?;
             self.process_transfer_action_internal(receiver_id, actions).await
         }
     }

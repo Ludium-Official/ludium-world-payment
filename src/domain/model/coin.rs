@@ -2,6 +2,7 @@ use chrono::NaiveDateTime;
 use diesel_derive_enum::DbEnum;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use crate::adapter::output::persistence::db::schema::coin;
 
@@ -77,15 +78,15 @@ pub struct NewCoinPayload {
     pub decimals: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct CoinResponse {
     pub id: String,
     pub name: String,
     pub symbol: String,
     pub decimals: i32,
-    pub coin_type: CoinType,
-    pub created_date: NaiveDateTime,
-    pub updated_date: NaiveDateTime,
+    pub coin_type: String,
+    pub created_date: i64, 
+    pub updated_date: i64, 
 }
 
 
@@ -97,9 +98,9 @@ impl From<Coin> for CoinResponse {
             name: coin.name,
             symbol: coin.symbol,
             decimals: coin.decimals,
-            coin_type: coin.coin_type,
-            created_date: coin.created_date,
-            updated_date: coin.updated_date,
+            coin_type: coin.coin_type.to_string(),
+            created_date: coin.created_date.and_utc().timestamp(),
+            updated_date: coin.updated_date.and_utc().timestamp(),
         }
     }
 }

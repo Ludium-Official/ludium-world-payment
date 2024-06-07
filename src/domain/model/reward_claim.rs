@@ -2,6 +2,7 @@ use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use diesel_derive_enum::DbEnum;
 use super::coin::Coin;
@@ -44,6 +45,16 @@ impl PartialEq for RewardClaimStatus {
     }
 }
 
+impl core::fmt::Display for RewardClaimStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RewardClaimStatus::Ready => write!(f, "READY"),
+            RewardClaimStatus::TransactionApproved => write!(f, "TRANSACTION_APPROVED"),
+            RewardClaimStatus::TransactionFailed => write!(f, "TRANSACTION_FAILED"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Identifiable)]
 #[diesel(table_name = reward_claim)]
 pub struct RewardClaim {
@@ -70,16 +81,17 @@ pub struct NewRewardClaim {
     pub user_address: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, ToSchema)]
 pub struct NewRewardClaimPayload {
+    #[schema(value_type = String)]
     pub mission_id: Uuid,
+    #[schema(value_type = String)]
     pub coin_network_id: Uuid,
     pub amount: String,
-    pub user_id: Uuid,
     pub user_address: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct CombinedRewardClaimResponse {
     id: String,
     amount: String,
@@ -87,10 +99,10 @@ pub struct CombinedRewardClaimResponse {
     coin_network: CoinNetworkDetailsResponse,
     user_id: String,
     user_address: String,
-    reward_claim_status: RewardClaimStatus,
+    reward_claim_status: String,
     detail: RewardClaimDetailResponse,
-    created_date: String,
-    updated_date: String,
+    created_date: i64,
+    updated_date: i64,
 }
 
 impl From<(RewardClaim, RewardClaimDetail, CoinNetwork, Coin, Network)> for CombinedRewardClaimResponse {
@@ -102,10 +114,10 @@ impl From<(RewardClaim, RewardClaimDetail, CoinNetwork, Coin, Network)> for Comb
             coin_network: CoinNetworkDetailsResponse::from((coin_network, coin, network)),
             user_id: claim.user_id.to_string(),
             user_address: claim.user_address,
-            reward_claim_status: claim.reward_claim_status,
+            reward_claim_status: claim.reward_claim_status.to_string(),
             detail: RewardClaimDetailResponse::from(detail),
-            created_date: claim.created_date.to_string(),
-            updated_date: claim.updated_date.to_string(),
+            created_date: claim.created_date.and_utc().timestamp(),
+            updated_date: claim.updated_date.and_utc().timestamp(),
         }
     }
 }
@@ -118,9 +130,9 @@ pub struct RewardClaimResponse {
     coin_network_id: String,
     user_id: String,
     user_address: String,
-    reward_claim_status: RewardClaimStatus,
-    created_date: String,
-    updated_date: String,
+    reward_claim_status: String,
+    created_date: i64,
+    updated_date: i64,
 }
 
 impl From<RewardClaim> for RewardClaimResponse {
@@ -132,9 +144,9 @@ impl From<RewardClaim> for RewardClaimResponse {
             coin_network_id: claim.coin_network_id.to_string(),
             user_id: claim.user_id.to_string(),
             user_address: claim.user_address,
-            reward_claim_status: claim.reward_claim_status,
-            created_date: claim.created_date.to_string(),
-            updated_date: claim.updated_date.to_string(),
+            reward_claim_status: claim.reward_claim_status.to_string(),
+            created_date: claim.created_date.and_utc().timestamp(),
+            updated_date: claim.updated_date.and_utc().timestamp(),
         }
     }
 }

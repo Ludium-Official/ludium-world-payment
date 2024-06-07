@@ -1,10 +1,16 @@
 use std::sync::Arc;
 
 use axum::{http::{Method, Uri}, response::{IntoResponse, Response}, Json};
-use serde_json::json;
+use serde::Serialize;
+use utoipa::ToSchema;
 use uuid::Uuid;
 use crate::{adapter::input::{ctx::Ctx, error::Error}, config::log::log_request};
 
+#[derive(Serialize, ToSchema)]
+pub struct ErrorResponse{
+	pub status_code: u16,
+	pub message: String,
+}
 
 pub async fn mapper(
 	ctx: Option<Ctx>,
@@ -21,13 +27,13 @@ pub async fn mapper(
 		client_status_error
 			.as_ref()
 			.map(|(status_code, client_error_message)| {
-				let client_error_body = json!({
-					"error": {
-						"message": client_error_message.to_string(),
-					}
-				});
+				let error_response = ErrorResponse {
+					status_code: status_code.as_u16(),
+					message: client_error_message.to_string(),
+				};
 
-				(*status_code, Json(client_error_body)).into_response()
+				// (*status_code, Json(client_error_body)).into_response()
+				(*status_code, Json(error_response)).into_response()
 			});
 
 	let client_error_message = client_status_error.unzip().1;

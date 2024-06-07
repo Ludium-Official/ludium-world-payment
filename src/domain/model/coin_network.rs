@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use crate::adapter::output::persistence::db::schema::coin_network;
 use crate::domain::model::coin::Coin;
@@ -46,8 +47,8 @@ pub struct CoinNetworkResponse {
     pub coin_id: String,
     pub network_id: String,
     pub contract_address: Option<String>,
-    pub created_date: NaiveDateTime,
-    pub updated_date: NaiveDateTime,
+    pub created_date: i64, 
+    pub updated_date: i64, 
 }
 
 impl From<CoinNetwork> for CoinNetworkResponse {
@@ -57,20 +58,20 @@ impl From<CoinNetwork> for CoinNetworkResponse {
             coin_id: coin_network.coin_id.to_string(),
             network_id: coin_network.network_id.to_string(),
             contract_address: coin_network.contract_address,
-            created_date: coin_network.created_date,
-            updated_date: coin_network.updated_date,
+            created_date: coin_network.created_date.and_utc().timestamp(),
+            updated_date: coin_network.updated_date.and_utc().timestamp(),
         }
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct CoinNetworkDetailsResponse {
     pub id: String,
     pub coin: CoinResponse,
     pub network: NetworkResponse,
     pub contract_address: Option<String>,
-    pub created_date: NaiveDateTime,
-    pub updated_date: NaiveDateTime,
+    pub created_date: i64, 
+    pub updated_date: i64, 
 }
 
 impl From<(CoinNetwork, Coin, Network)> for CoinNetworkDetailsResponse {
@@ -80,8 +81,8 @@ impl From<(CoinNetwork, Coin, Network)> for CoinNetworkDetailsResponse {
             network: NetworkResponse::from(network),
             id: coin_network.id.to_string(),
             contract_address: coin_network.contract_address,
-            created_date: coin_network.created_date,
-            updated_date: coin_network.updated_date,
+            created_date: coin_network.created_date.and_utc().timestamp(),
+            updated_date: coin_network.updated_date.and_utc().timestamp(),
         }
     }
 }

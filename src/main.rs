@@ -15,8 +15,11 @@ use adapter::input::web::middleware::permission;
 use axum::{middleware, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use config::log::request_logging_middleware;
+use config::swagger::ApiDoc;
 use state::AppState;
 use tower_cookies::CookieManagerLayer;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 use crate::{
     adapter::input::{
         routes_static, 
@@ -33,6 +36,7 @@ async fn main() -> Result<()>{
     let app_state = Arc::new(AppState::new(&config).await?);
     
     let mut routes_all = Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .merge(routes_hello::routes());
     let mut routes_auth_apis = web::routes_network::routes(Arc::clone(&app_state))
         .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))

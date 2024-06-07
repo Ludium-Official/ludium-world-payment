@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use crate::adapter::output::persistence::db::schema::network;
 use chrono::NaiveDateTime;
@@ -27,13 +28,13 @@ pub struct NewNetworkPayload {
     pub code: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct NetworkResponse {
-    id: String,
-    name: String,
-    symbol: String,
-    created_date: NaiveDateTime,
-    updated_date: NaiveDateTime,
+    pub id: String,
+    pub name: String,
+    pub symbol: String,
+    pub created_date: i64, 
+    pub updated_date: i64, 
 }
 
 impl From<Network> for NetworkResponse {
@@ -42,8 +43,8 @@ impl From<Network> for NetworkResponse {
             id: network.id.to_string(),
             name: network.name,
             symbol: network.code,
-            created_date: network.created_date,
-            updated_date: network.updated_date,
+            created_date: network.created_date.and_utc().timestamp(),
+            updated_date: network.updated_date.and_utc().timestamp(),
         }
     }
 }

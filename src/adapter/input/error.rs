@@ -61,7 +61,7 @@ impl Error {
 			// -- Auth 
 			Self::AuthFailNoAuthInformation
 			| Self::AuthFailCtxNotInRequestExt => {
-				(StatusCode::FORBIDDEN, "No Auth".to_string())
+				(StatusCode::FORBIDDEN, "No Auth Information".to_string())
 			},
 			Self::Unauthorized { message } => (
 				StatusCode::FORBIDDEN,

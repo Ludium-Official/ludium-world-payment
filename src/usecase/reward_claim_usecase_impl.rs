@@ -88,8 +88,8 @@ where
         // todo: payload validation2) user mission 금액 일치하는지 확인
 
         // --- user 당 mission 중복 요청 방지 
-        if self.reward_claim_repo.get_by_mission_and_user(db_manager.get_connection().await?.into(), payload.mission_id, payload.user_id).await.is_ok() {
-            return Err(Error::RewardClaimDuplicate { mission_id: payload.mission_id.to_string(), user_id: payload.user_id.to_string() });
+        if self.reward_claim_repo.get_by_mission_and_user(db_manager.get_connection().await?.into(), payload.mission_id, user_id).await.is_ok() {
+            return Err(Error::RewardClaimDuplicate { mission_id: payload.mission_id.to_string(), user_id: user_id.to_string() });
         }
 
         let scale_factor = BigDecimal::from_str(&format!("1e{}", coin.decimals)).expect("Invalid decimal format");
@@ -103,7 +103,7 @@ where
             coin_network_id: payload.coin_network_id,
             reward_claim_status: RewardClaimStatus::Ready,
             amount: amount_in_smallest_unit.clone(),
-            user_id: payload.user_id,
+            user_id: user_id,
             user_address: payload.user_address.clone(),
         };
 

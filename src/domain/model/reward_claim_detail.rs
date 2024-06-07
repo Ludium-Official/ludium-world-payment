@@ -1,6 +1,7 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::adapter::output::persistence::db::schema::reward_claim_detail;
@@ -31,15 +32,15 @@ pub struct NewRewardClaimDetail {
 }
 
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct RewardClaimDetailResponse {
     id: String,
     reward_claim_id: String,
     transaction_hash: String,
     sended_user_id: String,
     sended_user_address: String,
-    created_date: String,
-    updated_date: String,
+    created_date: i64,
+    updated_date: i64,
 }
 
 impl From<RewardClaimDetail> for RewardClaimDetailResponse {
@@ -50,8 +51,8 @@ impl From<RewardClaimDetail> for RewardClaimDetailResponse {
             transaction_hash: reward_claim_detail.transaction_hash,
             sended_user_id: reward_claim_detail.sended_user_id.to_string(),
             sended_user_address: reward_claim_detail.sended_user_address,
-            created_date: reward_claim_detail.created_date.to_string(),
-            updated_date: reward_claim_detail.updated_date.to_string(),
+            created_date: reward_claim_detail.created_date.and_utc().timestamp(),
+            updated_date: reward_claim_detail.updated_date.and_utc().timestamp(),
         }
     }
 }

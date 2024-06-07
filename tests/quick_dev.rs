@@ -69,7 +69,6 @@ async fn quick_reward() -> Result<()> {
         client
     )?;
 
-
     hc.do_get("/hello").await?.print().await?;
 
     // login
@@ -78,15 +77,13 @@ async fn quick_reward() -> Result<()> {
         "password": "welcome"
     })).await?.print().await?;
 
-
-    
     // reward_claims
     // usdt
     hc.do_post("/api/reward-claims", json!({
         "mission_id": "a0008dda-0101-deff-a12d-b5bf10013831",
         "coin_network_id": "22222222-0000-0000-0000-000000000001",
         "amount": "0.00001",
-        "user_id": "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
+        "user_id": "00000000-0000-0000-0000-000000000002",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
@@ -94,7 +91,7 @@ async fn quick_reward() -> Result<()> {
         "mission_id": "a0008dda-0101-d2ff-a12d-b5bf10013832",
         "coin_network_id": "22222222-0000-0000-0000-000000000001",
         "amount": "0.00001",
-        "user_id": "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
+        "user_id": "00000000-0000-0000-0000-000000000002",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
@@ -102,11 +99,11 @@ async fn quick_reward() -> Result<()> {
         "mission_id": "a0008dda-0101-d2ff-a12d-b5bf10013833",
         "coin_network_id": "22222222-0000-0000-0000-000000000001",
         "amount": "0.00001",
-        // "user_id": "00000000-0000-0000-0000-000000000002",
-        "user_id": "bcd28999-2abc-0abc-1abc-b5bf1d8ee999",
+        "user_id": "00000000-0000-0000-0000-000000000002",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
+    hc.do_get("/api/me/reward-claims").await?.print().await?;
     Ok(())
 }
 

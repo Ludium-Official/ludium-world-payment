@@ -1,5 +1,6 @@
 pub mod log; 
 pub mod near;
+pub mod swagger;
 
 use std::env;
 use dotenvy::dotenv;
