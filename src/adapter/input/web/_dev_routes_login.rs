@@ -4,6 +4,7 @@ use axum::{routing::post, Json, Router};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::{Cookie, Cookies};
+use utoipa::ToSchema;
 
 use crate::web;
 use crate::adapter::input::error::{Error, Result};
@@ -11,10 +12,16 @@ use std::env;
 use dotenvy::dotenv;
 
 pub fn routes() -> Router {
-    Router::new().route("/api/login", post(api_login))
+    Router::new().route("/api/login", post(login))
 }
 
-async fn api_login(
+#[utoipa::path(
+    post,
+    path = "/api/login",
+    request_body = LoginPayload,
+    tag = "Login"
+)]
+async fn login(
     cookies: Cookies, 
     payload: Json<LoginPayload>
 ) -> Result<Json<Value>> {
@@ -48,8 +55,8 @@ async fn api_login(
     Ok(body)
 }
 
-#[derive(Debug, Deserialize)]
-struct LoginPayload {
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct LoginPayload {
     username: String,
     password: String,
 }
