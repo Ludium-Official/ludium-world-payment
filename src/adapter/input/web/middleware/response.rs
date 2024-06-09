@@ -32,7 +32,6 @@ pub async fn mapper(
 					message: client_error_message.to_string(),
 				};
 
-				// (*status_code, Json(client_error_body)).into_response()
 				(*status_code, Json(error_response)).into_response()
 			});
 

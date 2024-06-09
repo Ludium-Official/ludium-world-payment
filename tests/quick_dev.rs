@@ -78,28 +78,24 @@ async fn quick_reward() -> Result<()> {
     })).await?.print().await?;
 
     // reward_claims
-    // usdt
     hc.do_post("/api/reward-claims", json!({
-        "mission_id": "a0008dda-0101-deff-a12d-b5bf10013831",
-        "coin_network_id": "22222222-0000-0000-0000-000000000001",
+        "mission_id": "10000000-0000-0000-0000-000000000001",
+        "coin_network_id": "22222222-0000-0000-0000-000000000001", // usdt
         "amount": "0.00001",
-        "user_id": "00000000-0000-0000-0000-000000000002",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
     hc.do_post("/api/reward-claims", json!({
-        "mission_id": "a0008dda-0101-d2ff-a12d-b5bf10013832",
-        "coin_network_id": "22222222-0000-0000-0000-000000000001",
+        "mission_id": "10000000-0000-0000-0000-000000000002",
+        "coin_network_id": "22222222-0000-0000-0000-000000000001", // usdt
         "amount": "0.00001",
-        "user_id": "00000000-0000-0000-0000-000000000002",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
     hc.do_post("/api/reward-claims", json!({
-        "mission_id": "a0008dda-0101-d2ff-a12d-b5bf10013833",
-        "coin_network_id": "22222222-0000-0000-0000-000000000001",
+        "mission_id": "10000000-0000-0000-0000-000000000003",
+        "coin_network_id": "33333333-9c58-47f8-9a0f-2d0c8d3f807f", // near 
         "amount": "0.00001",
-        "user_id": "00000000-0000-0000-0000-000000000002",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 

@@ -5,3 +5,5 @@ pub mod coin_network;
 pub mod network;
 pub mod reward_claim;
 pub mod reward_claim_detail;
+pub mod mission;
+pub mod mission_submit;

@@ -16,3 +16,26 @@ CREATE TABLE public.tb_ldm_usr_rgh (
     CONSTRAINT usr_rgh_pk PRIMARY KEY (id),
     CONSTRAINT usr_rgh_fk FOREIGN KEY (id) REFERENCES public.tb_ldm_usr(id)
 );
+
+CREATE TABLE public.mission (
+	mission_id uuid NOT NULL,
+	curriculum_id uuid NOT NULL,
+	title varchar(255) NOT NULL,
+	description text NOT NULL,
+	create_at timestamp NOT NULL DEFAULT now(),
+	usr_id uuid NOT NULL,
+	mission_submit_form text NOT NULL,
+	CONSTRAINT mission_pkey PRIMARY KEY (mission_id),
+	CONSTRAINT mission_tb_ldm_usr_fk FOREIGN KEY (usr_id) REFERENCES public.tb_ldm_usr(id)
+);
+
+CREATE TABLE public.mission_submit (
+	mission_id uuid NOT NULL,
+	usr_id uuid NOT NULL,
+	description text NOT NULL,
+	status varchar(50) NOT NULL,
+	create_at timestamp NOT NULL DEFAULT now(),
+	CONSTRAINT mission_submit_pkey PRIMARY KEY (mission_id, usr_id),
+	CONSTRAINT mission_submit_mission_id_fkey FOREIGN KEY (mission_id) REFERENCES public.mission(mission_id),
+	CONSTRAINT mission_submit_usr_id_fkey FOREIGN KEY (usr_id) REFERENCES public.tb_ldm_usr(id)
+);

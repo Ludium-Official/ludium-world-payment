@@ -4,8 +4,7 @@ use diesel::prelude::*;
 use uuid::Uuid;
 use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
 use crate::port::output::reward_claim_repository::RewardClaimRepository;
-use super::{adapt_db_error, reward_claim};
-use crate::adapter::output::persistence::db::error::{Result, Error};
+use super::{Error, Result, adapt_db_error, reward_claim};
 
 #[derive(Clone, Debug)]
 pub struct PostgresRewardClaimRepository;
@@ -13,7 +12,7 @@ pub struct PostgresRewardClaimRepository;
 #[async_trait]
 impl RewardClaimRepository for PostgresRewardClaimRepository {
     async fn insert(&self, conn: Object, new_reward_claim: NewRewardClaim) -> Result<RewardClaim> {
-        conn.interact(|conn| {
+        conn.interact(move |conn| {
             diesel::insert_into(reward_claim::table)
                 .values(new_reward_claim)
                 .get_result::<RewardClaim>(conn)
@@ -34,7 +33,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
     }
 
     async fn insert_detail(&self, conn: Object, new_reward_claim_detail: NewRewardClaimDetail) -> Result<RewardClaimDetail> {
-        conn.interact(|conn| {
+        conn.interact(move |conn| {
             diesel::insert_into(reward_claim_detail::table)
                 .values(new_reward_claim_detail)
                 .get_result::<RewardClaimDetail>(conn)

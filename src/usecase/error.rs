@@ -8,22 +8,22 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Clone, Serialize, Debug)]
 pub enum Error {
     // --- 400 
-    RewardClaimDuplicate { 
-        mission_id: String,
-        user_id: String,
-    },
     TranscationActionVerifyFailed,
     InvalidClaimStatusForReject, 
     InvalidClaimStatusForApprove, 
     InvalidAmountConversion,
+    MissionSubmitNotApproved,
 
     // --- 404
     CoinTypeNotSupported{
         coin_type: String,
     },
-    CoinNetworkIdNotFound { 
-        id: String,
-    },
+    CoinNetworkIdNotFound,
+    UserIdNotFound,
+    MissionSubmitIdNotFound,
+
+    // --- 409
+    RewardClaimDuplicate,
 
     // --- 500
     InternalServerError  { 
@@ -57,13 +57,21 @@ impl Error {
                 StatusCode::NOT_FOUND,
                 format!("Coin Type Not Supported: {}", coin_type),
             ),
-            Self::CoinNetworkIdNotFound { id } => (
+            Self::CoinNetworkIdNotFound => (
                 StatusCode::NOT_FOUND,
-                format!("Coin Network Id Not Found: {}", id),
+                format!("Coin Network Id Not Found"),
             ),
-            Self::RewardClaimDuplicate { mission_id, user_id } => (
-                StatusCode::BAD_REQUEST,
-                format!("Reward Claim Duplicate: Mission Id: {}, User Id: {}", mission_id, user_id),
+            Self::UserIdNotFound => (
+                StatusCode::NOT_FOUND,
+                format!("User Id Not Found"),
+            ),
+            Self::MissionSubmitIdNotFound => (
+                StatusCode::NOT_FOUND,
+                format!("Mission Submit Id Not Found"),
+            ),
+            Self::RewardClaimDuplicate => (
+                StatusCode::CONFLICT,
+                "Mission already claimed".to_string()
             ),
             Self::TranscationActionVerifyFailed => (
                 StatusCode::BAD_REQUEST,
@@ -80,6 +88,10 @@ impl Error {
             Self::InvalidAmountConversion => (
                 StatusCode::BAD_REQUEST,
                 "Invalid Amount Conversion".to_string(),
+            ),
+            Self::MissionSubmitNotApproved => (
+                StatusCode::BAD_REQUEST,
+                "Mission Submit Not Approved".to_string(),
             ),
             Self::InternalServerError { .. } => (
                 StatusCode::INTERNAL_SERVER_ERROR,

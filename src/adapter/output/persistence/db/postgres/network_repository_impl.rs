@@ -4,8 +4,7 @@ use diesel::prelude::*;
 use uuid::Uuid;
 use crate::domain::model::network::{Network, NewNetwork, NewNetworkPayload};
 use crate::port::output::network_repository::NetworkRepository;
-use crate::adapter::output::persistence::db::error::{Error, Result};
-use super::{adapt_db_error, network};
+use super::{Error, Result, adapt_db_error, network};
 
 #[derive(Clone, Debug)]
 pub struct PostgresNetworkRepository;
@@ -19,7 +18,7 @@ impl NetworkRepository for PostgresNetworkRepository {
             code: new_network_payload.code,
         };
 
-        conn.interact(|conn| {
+        conn.interact(move |conn| {
             diesel::insert_into(network::table)
                 .values(new_network)
                 .get_result::<Network>(conn)
@@ -37,7 +36,7 @@ impl NetworkRepository for PostgresNetworkRepository {
     }
 
     async fn list(&self, conn: Object) -> Result<Vec<Network>> {
-        conn.interact(|conn| {
+        conn.interact(move |conn| {
             network::table.load::<Network>(conn)
         })
         .await?

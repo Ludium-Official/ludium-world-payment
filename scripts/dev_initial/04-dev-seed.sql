@@ -14,6 +14,20 @@ INSERT INTO public.tb_ldm_usr_rgh (id, is_crt, is_prv, is_adm) VALUES
     ('00000000-0000-0000-0000-000000000004', true, true, true),
     ('00000000-0000-0000-0000-000000000005', false, true, true);
 
+-- Insert into mission table
+INSERT INTO public.mission (mission_id, curriculum_id, title, description, usr_id, mission_submit_form) VALUES
+    ('10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Mission 1', 'Description for mission 1', '00000000-0000-0000-0000-000000000001', 'Form for mission 1'),
+    ('10000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Mission 2', 'Description for mission 2', '00000000-0000-0000-0000-000000000002', 'Form for mission 2'),
+    ('10000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003', 'Mission 3', 'Description for mission 3', '00000000-0000-0000-0000-000000000003', 'Form for mission 3'),
+    ('10000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004', 'Mission 4', 'Description for mission 4', '00000000-0000-0000-0000-000000000004', 'Form for mission 4'),
+    ('10000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000005', 'Mission 5', 'Description for mission 5', '00000000-0000-0000-0000-000000000005', 'Form for mission 5');
+
+-- Insert into mission_submit table
+INSERT INTO public.mission_submit (mission_id, usr_id, description, status) VALUES
+    ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Submission for mission 1 by provider', 'SUBMIT'),
+    ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'Submission for mission 2 by provider', 'APPROVE'),
+    ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Submission for mission 3 by provider', 'APPROVE');
+
 -- Insert into network table
 INSERT INTO public.network (id, name, code) VALUES 
 ('86b82d0f-80d5-4406-ae5a-e387db79ca32', 'NEAR Protocol', 'NEAR');

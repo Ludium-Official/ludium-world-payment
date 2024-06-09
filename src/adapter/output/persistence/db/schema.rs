@@ -40,6 +40,30 @@ diesel::table! {
 }
 
 diesel::table! {
+    mission (mission_id) {
+        mission_id -> Uuid,
+        curriculum_id -> Uuid,
+        #[max_length = 255]
+        title -> Varchar,
+        description -> Text,
+        create_at -> Timestamp,
+        usr_id -> Uuid,
+        mission_submit_form -> Text,
+    }
+}
+
+diesel::table! {
+    mission_submit (mission_id, usr_id) {
+        mission_id -> Uuid,
+        usr_id -> Uuid,
+        description -> Text,
+        #[max_length = 50]
+        status -> Varchar,
+        create_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     network (id) {
         id -> Uuid,
         #[max_length = 50]
@@ -105,12 +129,17 @@ diesel::table! {
 
 diesel::joinable!(coin_network -> coin (coin_id));
 diesel::joinable!(coin_network -> network (network_id));
+diesel::joinable!(mission -> tb_ldm_usr (usr_id));
+diesel::joinable!(mission_submit -> mission (mission_id));
+diesel::joinable!(mission_submit -> tb_ldm_usr (usr_id));
 diesel::joinable!(reward_claim_detail -> reward_claim (reward_claim_id));
 diesel::joinable!(tb_ldm_usr_rgh -> tb_ldm_usr (id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     coin,
     coin_network,
+    mission,
+    mission_submit,
     network,
     reward_claim,
     reward_claim_detail,

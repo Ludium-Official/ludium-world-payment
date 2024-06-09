@@ -21,7 +21,6 @@ use near_primitives::types::{AccountId, BlockHeight};
 use near_primitives::views::ExecutionStatusView;
 use near_primitives::views::{FinalExecutionOutcomeView, TxExecutionStatus};
 use serde_json::json;
-use tokio::sync::Mutex;
 use near_fetch::signer::ExposeAccountId;
 use super::error::{Result, Error};
 use crate::domain::model::near::TransactionResultResponse;
@@ -35,7 +34,6 @@ pub struct NearRpcManager {
     pub signer: KeyRotatingSignerWrapper,
     pub whitelisted_contracts: Vec<String>,
     pub whitelisted_senders: Vec<String>,
-    pub nonce_mutex: Arc<Mutex<u64>>,
 }
 
 impl NearRpcManager {
@@ -44,7 +42,7 @@ impl NearRpcManager {
         whitelisted_contracts: Vec<String>,
         whitelisted_senders: Vec<String>,
     ) -> Self {
-        Self { client, signer, whitelisted_contracts, whitelisted_senders, nonce_mutex: Arc::new(Mutex::new(0)) }
+        Self { client, signer, whitelisted_contracts, whitelisted_senders }
     }
 
     fn signer(&self) -> Arc<KeyRotatingSigner> {

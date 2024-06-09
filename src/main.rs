@@ -37,20 +37,19 @@ async fn main() -> Result<()>{
     
     let mut routes_all = Router::new()
         .merge(routes_hello::routes());
-    let mut routes_auth_apis = web::routes_network::routes(Arc::clone(&app_state))
+    let routes_auth_apis = web::routes_network::routes(Arc::clone(&app_state))
         .merge(web::routes_reward_claim::routes(Arc::clone(&app_state)))
         .merge(web::routes_coin::routes(Arc::clone(&app_state)))
         .merge(web::routes_coin_network::routes(Arc::clone(&app_state)))
         .route_layer(middleware::from_fn(permission::mw_require_auth));
 
     if config.is_local() {
-        tracing::debug!("Running in local mode");
+        tracing::info!("dev routes enabled");
         routes_all = routes_all.merge(web::_dev_routes_login::routes());
-        routes_auth_apis = routes_auth_apis.merge(web::_dev_routes_user::routes(Arc::clone(&app_state)));
     }
 
     if config.is_development() {
-        tracing::debug!("Running in development mode");
+        tracing::info!("swagger-ui enabled");
         routes_all = routes_all.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }
 

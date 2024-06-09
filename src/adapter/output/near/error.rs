@@ -27,7 +27,6 @@ pub enum Error {
 	CheckStorageDepositFailed { 
         message: String,
     },
-	
 	InternalServerError {
 		message: String,
 	}

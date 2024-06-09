@@ -8,7 +8,7 @@ use crate::{
             CombinedRewardClaimResponse, NewRewardClaim, NewRewardClaimPayload, RewardClaim, RewardClaimStatus
         }, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}
     }, port::output::{
-        coin_network_repository::CoinNetworkRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager
+        coin_network_repository::CoinNetworkRepository, mission_submit_repository::MissionSubmitRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager, UserRepository
     }
 };
 use super::error::{Error, Result};
@@ -16,35 +16,43 @@ use super::utrait::reward_claim_usecase::RewardClaimUsecase;
 use std::str::FromStr;
 use near_primitives::types::AccountId;
 
-pub struct RewardClaimUsecaseImpl<D: DbManager, R: RewardClaimRepository, C: CoinNetworkRepository> {
+pub struct RewardClaimUsecaseImpl<D: DbManager, R: RewardClaimRepository, C: CoinNetworkRepository, U: UserRepository, MS: MissionSubmitRepository> {
     db_manager: Arc<D>,
     reward_claim_repo: Arc<R>,
     coin_network_repo: Arc<C>,
     near_rpc_manager: Arc<NearRpcManager>,
+    user_repo: Arc<U>,
+    mission_submit_repo: Arc<MS>,
 }
 
-impl<D, R, C> RewardClaimUsecaseImpl<D, R, C>
+impl<D, R, C, U, MS> RewardClaimUsecaseImpl<D, R, C, U, MS>
 where
     D: DbManager + Send + Sync,
     R: RewardClaimRepository + Send + Sync,
     C: CoinNetworkRepository + Send + Sync,
+    U: UserRepository + Send + Sync,
+    MS: MissionSubmitRepository + Send + Sync,
 {
-    pub fn new(db_manger: Arc<D>, reward_claim_repo: Arc<R>, coin_network_repo: Arc<C>, near_rpc_manager: Arc<NearRpcManager>) -> Self {
+    pub fn new(db_manger: Arc<D>, reward_claim_repo: Arc<R>, coin_network_repo: Arc<C>, near_rpc_manager: Arc<NearRpcManager>, user_repo: Arc<U>, mission_submit_repo: Arc<MS>) -> Self {
         Self {
             db_manager: db_manger,
             reward_claim_repo,
             coin_network_repo,
             near_rpc_manager,
+            user_repo,
+            mission_submit_repo,
         }
     }
 }
 
 #[async_trait]
-impl<D, R, C> RewardClaimUsecase for RewardClaimUsecaseImpl<D, R, C,>
+impl<D, R, C, U, MS> RewardClaimUsecase for RewardClaimUsecaseImpl<D, R, C, U, MS>
 where 
     D: DbManager + Send + Sync,
     R: RewardClaimRepository + Send + Sync,
     C: CoinNetworkRepository + Send + Sync,
+    U: UserRepository + Send + Sync,
+    MS: MissionSubmitRepository + Send + Sync,
 {
     async fn get_me_reward_claim(&self, user_id: Uuid) -> Result<Vec<CombinedRewardClaimResponse>> {
         let db_manager = &self.db_manager;
@@ -76,20 +84,41 @@ where
     async fn create_reward_claim(&self, user_id: Uuid, payload: NewRewardClaimPayload) -> Result<CombinedRewardClaimResponse> {
         let db_manager = &self.db_manager;
         
+        // --- user validation
+        self.user_repo.get(db_manager.get_connection().await?.into(), user_id).await.map_err(|_| {
+            tracing::error!("User Not Found: {}", user_id.to_string());
+            Error::UserIdNotFound
+        })?;
+
+        // --- mission_submit validation
+        let mission_submit = self.mission_submit_repo.get(db_manager.get_connection().await?.into(), user_id, payload.mission_id)
+            .await.map_err(|_| {
+                tracing::error!("Mission Submit Not Found: {}", payload.mission_id.to_string());
+                Error::MissionSubmitIdNotFound
+            })?;
+
+        if !mission_submit.is_approved() {
+            tracing::error!("Mission Submit Not Approved: {}", payload.mission_id.to_string());
+            return Err(Error::MissionSubmitNotApproved);
+        }
+
+        // todo: payload validation2) user mission 금액 일치하는지 확인
+        
         let (coin_network, coin, network) = self.coin_network_repo
             .get_with_coin_and_network(
                 self.db_manager.get_connection().await?.into(),
                 payload.coin_network_id
             )
             .await
-            .map_err(|_| Error::CoinNetworkIdNotFound { id: payload.coin_network_id.to_string() })?;
-
-        // todo: payload validation1) user mission 승인된 상태인지 확인 
-        // todo: payload validation2) user mission 금액 일치하는지 확인
+            .map_err(|_| {
+                tracing::error!("Coin Network Id Not Found: {}", payload.coin_network_id.to_string());
+                Error::CoinNetworkIdNotFound
+            })?;
 
         // --- user 당 mission 중복 요청 방지 
         if self.reward_claim_repo.get_by_mission_and_user(db_manager.get_connection().await?.into(), payload.mission_id, user_id).await.is_ok() {
-            return Err(Error::RewardClaimDuplicate { mission_id: payload.mission_id.to_string(), user_id: user_id.to_string() });
+            tracing::error!("Reward Claim Duplicate: Mission Id: {}, User Id: {}", payload.mission_id, user_id);
+            return Err(Error::RewardClaimDuplicate);
         }
 
         let scale_factor = BigDecimal::from_str(&format!("1e{}", coin.decimals)).expect("Invalid decimal format");
@@ -147,7 +176,6 @@ where
             sended_user_address: response.receiver_id.to_string(),
         };
         let claim_detail = self.reward_claim_repo.insert_detail(db_manager.get_connection().await?.into(), new_reward_claim_detail).await?;
-
         if response.has_errors {
             Err(Error::TransactionActionFailed { message: response.error_details.join(", ") })
         }else {

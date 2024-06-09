@@ -25,6 +25,7 @@ pub fn routes(state: Arc<AppState>) -> Router {
         (status = 400, description = "Bad Request", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not Found", body = ErrorResponse),
+        (status = 409, description = "Conflict", body = ErrorResponse),
         (status = 500, description = "Internel Server Error", body = ErrorResponse)
     ),
     tag = "RewardClaim"

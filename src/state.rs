@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use crate::adapter::output::persistence::db::postgres::mission_repository_impl::PostgresMissionSubmitRepository;
 use crate::adapter::output::persistence::db::postgres::{PostgresDbManager, user_repository_impl::PostgresUserRepository};
 use crate::config::Config;
 use crate::usecase::{reward_claim_usecase_impl::RewardClaimUsecaseImpl, utrait::reward_claim_usecase::RewardClaimUsecase};
@@ -33,13 +34,13 @@ impl AppState {
             let _ = db_manager.get_connection().await?;
             tracing::info!("established postgres db connection");
         }
-
         
         let user_repo = Arc::new(PostgresUserRepository);
         let coin_repo = Arc::new(PostgresCoinRepository);
         let network_repo = Arc::new(PostgresNetworkRepository);
         let coin_network_repo = Arc::new(PostgresCoinNetworkRepository);
         let reward_claim_repo = Arc::new(PostgresRewardClaimRepository);
+        let mission_submit_repo = Arc::new(PostgresMissionSubmitRepository);
         let near_rpc_manager = Arc::new(NearRpcManager::new(
             config.near_network_config().rpc_client(),
             config.signer().clone(),
@@ -51,6 +52,8 @@ impl AppState {
             Arc::clone(&reward_claim_repo),
             Arc::clone(&coin_network_repo),
             Arc::clone(&near_rpc_manager),
+            Arc::clone(&user_repo),
+            Arc::clone(&mission_submit_repo),
         ));
 
         Ok(Self {

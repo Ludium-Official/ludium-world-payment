@@ -4,8 +4,7 @@ use diesel::prelude::*;
 use uuid::Uuid;
 use crate::{adapter::output::persistence::db::schema::{coin, network}, domain::model::{coin::Coin, coin_network::CoinNetwork, network::Network}};
 use crate::port::output::coin_network_repository::CoinNetworkRepository;
-use super::{adapt_db_error, coin_network};
-use crate::adapter::output::persistence::db::error::{Result, Error};
+use super::{Error, Result, adapt_db_error, coin_network};
 
 #[derive(Clone, Debug)]
 pub struct PostgresCoinNetworkRepository;

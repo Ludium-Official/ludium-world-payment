@@ -2,11 +2,9 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::adapter::output::persistence::db::error::{Error, Result};
 use crate::domain::model::user::{NewUser, NewUserPayload, User};
 use crate::port::output::UserRepository;
-
-use super::{adapt_db_error, tb_ldm_usr};
+use super::{Error, Result, adapt_db_error, tb_ldm_usr};
 
 #[derive(Clone, Debug)]
 pub struct PostgresUserRepository;
@@ -21,7 +19,7 @@ impl UserRepository for PostgresUserRepository {
             phn_nmb: new_user_payload.phn_nmb,
         };
 
-        conn.interact(|conn| {
+        conn.interact(move |conn| {
             diesel::insert_into(tb_ldm_usr::table)
                 .values(new_user)
                 .get_result::<User>(conn)
@@ -31,9 +29,11 @@ impl UserRepository for PostgresUserRepository {
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
-    async fn list(&self, conn: Object) -> Result<Vec<User>> {
-        conn.interact(|conn| {
-            tb_ldm_usr::table.load::<User>(conn)
+    async fn get(&self, conn: Object, user_id: Uuid) -> Result<User> {
+        conn.interact(move |conn| {
+            tb_ldm_usr::table
+                .find(user_id)
+                .get_result::<User>(conn)
         })
         .await
         .map_err(|e| Error::from(adapt_db_error(e)))?
@@ -52,12 +52,9 @@ mod tests {
 
     #[serial]
     #[tokio::test]
-    async fn test_list_users() -> Result<()> {
+    async fn test_get_user() -> Result<()> {
         let db_manager = _dev_utils::init_test().await;
         let user_repo = PostgresUserRepository;
-
-        let initial_users = user_repo.list(db_manager.get_connection().await?).await?;
-        let initial_count = initial_users.len();
 
         let new_user_payload = NewUserPayload {
             nick: "user1".to_string(),
@@ -71,11 +68,18 @@ mod tests {
             phn_nmb: "987654321".to_string(),
         };
 
-        user_repo.insert(db_manager.get_connection().await?, new_user_payload.clone()).await?;
-        user_repo.insert(db_manager.get_connection().await?, new_user_payload2.clone()).await?;
+        let created_user = user_repo.insert(db_manager.get_connection().await?, new_user_payload.clone()).await?;
+        let created_user2 = user_repo.insert(db_manager.get_connection().await?, new_user_payload2.clone()).await?;
 
-        let users = user_repo.list(db_manager.get_connection().await?).await?;
-        assert_eq!(users.len(), initial_count + 2);
+        let user = user_repo.get(db_manager.get_connection().await?, created_user.id).await?;
+        assert_eq!(user.nick, new_user_payload.nick);
+        assert_eq!(user.self_intro, new_user_payload.self_intro);
+        assert_eq!(user.phn_nmb, new_user_payload.phn_nmb);
+
+        let user2 = user_repo.get(db_manager.get_connection().await?, created_user2.id).await?;
+        assert_eq!(user2.nick, new_user_payload2.nick);
+        assert_eq!(user2.self_intro, new_user_payload2.self_intro);
+        assert_eq!(user2.phn_nmb, new_user_payload2.phn_nmb);
 
         Ok(())
     }

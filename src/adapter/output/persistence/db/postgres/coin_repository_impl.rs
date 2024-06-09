@@ -2,10 +2,8 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::adapter::output::persistence::db::error::{Error, Result};
 use crate::{domain::model::coin::{Coin, CoinType, NewCoin, NewCoinPayload}, port::output::coin_repository::CoinRepository};
-
-use super::{adapt_db_error, coin};
+use super::{Error, Result, adapt_db_error, coin};
 
 #[derive(Clone, Debug)]
 pub struct PostgresCoinRepository;
@@ -21,7 +19,7 @@ impl CoinRepository for PostgresCoinRepository {
             coin_type: CoinType::from(new_coin_payload.coin_type),
         };
 
-        conn.interact(|conn| {
+        conn.interact(move |conn| {
             diesel::insert_into(coin::table)
                 .values(new_coin)
                 .get_result::<Coin>(conn)
@@ -31,7 +29,7 @@ impl CoinRepository for PostgresCoinRepository {
     }
 
     async fn list(&self, conn: Object) -> Result<Vec<Coin>> {
-        conn.interact(|conn| {
+        conn.interact(move |conn| {
             coin::table.load::<Coin>(conn)
         })
         .await?
