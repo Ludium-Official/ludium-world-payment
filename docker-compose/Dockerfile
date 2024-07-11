@@ -1,7 +1,7 @@
 FROM rust:1.78 AS builder
 WORKDIR /usr/src/app
-COPY Cargo.toml Cargo.lock ./
-COPY src ./src
+COPY ../Cargo.toml ../Cargo.lock ./
+COPY ../src ./src
 ARG BUILD_FLAGS
 RUN if [ -z "$BUILD_FLAGS" ]; then cargo build --release; else cargo build --release --features ${BUILD_FLAGS}; fi
 

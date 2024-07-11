@@ -44,10 +44,11 @@ You will need to create and set your own multi account_keys in the `/account_key
 
 4. run app & db container 
 ```sh
-docker-compose -f ./docker-compose.local.yml up -d
+cd docker-compose && docker-compose -f ./local.yml up -d
 
 // or just `cargo run`
 ```
+> check the [docker-compose](./docker-compose/)
 
 ### For Development
 1. Start the application with hot-reloading for development:
@@ -68,11 +69,4 @@ if you want to set a new db table. you have to print db schema file
 # diesel print-schema --database-url={db_url} > {print_path}
 diesel print-schema --database-url=postgres://postgres:postgres@localhost:5432/temp_local > src/adapter/output/persistence/db/schema.rs
 ```
-
-
-## Deployment
-todo
-
-## License
-todo 
 

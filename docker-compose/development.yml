@@ -1,0 +1,13 @@
+services:
+  app: 
+    build: .
+    env_file:
+      - ../.env.development
+    environment:
+      - PAYMENT_RUN_MODE=development
+    ports:
+      - 8080:8080
+    volumes:
+      - ../config.toml:/payment-app/config.toml
+      - ../account_keys:/payment-app/account_keys
+      - ../self_signed_certs:/payment-app/self_signed_certs
