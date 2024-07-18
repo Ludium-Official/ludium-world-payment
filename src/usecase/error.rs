@@ -13,6 +13,7 @@ pub enum Error {
     InvalidClaimStatusForApprove, 
     InvalidAmountConversion,
     MissionSubmitNotApproved,
+    DetailedPostingNotApproved,
 	InvalidResourceType { message: String },
 
 
@@ -103,6 +104,10 @@ impl Error {
             Self::InvalidResourceType { message } => (
                 StatusCode::BAD_REQUEST,
                 message.to_string(),
+            ),
+            Self::DetailedPostingNotApproved => (
+                StatusCode::BAD_REQUEST,
+                "Detailed Posting Not Approved".to_string(),
             ),
             Self::InternalServerError { .. } => (
                 StatusCode::INTERNAL_SERVER_ERROR,

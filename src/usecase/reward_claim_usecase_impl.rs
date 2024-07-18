@@ -115,11 +115,17 @@ where
             }
         } else {
             // --- detailed_posting validation
-            let _detailed_posting = self.detailed_posting_repo.get(db_manager.get_connection().await?.into(), payload.resource_id)
+            let detailed_posting = self.detailed_posting_repo.get(db_manager.get_connection().await?.into(), payload.resource_id)
                 .await.map_err(|_| {
                     tracing::error!("Detailed Posting Not Found: {}", payload.resource_id.to_string());
                     Error::DetailedPostingIdNotFound
                 })?;
+
+            if !detailed_posting.is_approved() {
+                tracing::error!("Detailed Posting Not Approved: {}", payload.resource_id.to_string());
+                return Err(Error::DetailedPostingNotApproved);
+            }
+            
         }
 
         // todo: payload validation2) user mission 금액 일치하는지 확인

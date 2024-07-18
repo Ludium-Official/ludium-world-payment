@@ -106,7 +106,7 @@ async fn quick_reward() -> Result<()> {
     })).await?.print().await?;
 
     // reward_claims - detailed_posting 
-    // 1. success - detailed_posting.status = CREATE
+    // 1. failed - detailed_posting.status = CREATE
     hc.do_post("/api/reward-claims", json!({
         "resource_id": "33333333-0000-0000-0000-000000000001",
         "resource_type": "DETAILED_POSTING",
@@ -124,7 +124,7 @@ async fn quick_reward() -> Result<()> {
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
-    // 3. success - detailed_posting.status = CLOSED
+    // 3. failed - detailed_posting.status = CLOSED
     hc.do_post("/api/reward-claims", json!({
         "resource_id": "33333333-0000-0000-0000-000000000003",
         "resource_type": "DETAILED_POSTING",

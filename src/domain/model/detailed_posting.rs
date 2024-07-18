@@ -24,6 +24,11 @@ pub struct DetailedPosting {
     pub update_at: NaiveDateTime,
 }
 
+impl DetailedPosting {
+    pub fn is_approved(&self) -> bool {
+        self.status == "APPROVE"
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Insertable)]
 #[diesel(table_name = detailed_posting)]
