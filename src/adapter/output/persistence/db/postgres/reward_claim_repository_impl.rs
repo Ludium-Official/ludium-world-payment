@@ -2,7 +2,7 @@ use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, RewardClaim, RewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
+use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, RewardClaim, RewardClaimStatus, ResourceType}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
 use crate::port::output::reward_claim_repository::RewardClaimRepository;
 use super::{Error, Result, adapt_db_error, reward_claim};
 
@@ -15,17 +15,26 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         conn.interact(move |conn| {
             diesel::insert_into(reward_claim::table)
                 .values(new_reward_claim)
+                .returning(RewardClaim::as_select()) 
                 .get_result::<RewardClaim>(conn)
         })
         .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
-    async fn get_by_mission_and_user(&self, conn: Object, mission_id: Uuid, user_id: Uuid) -> Result<RewardClaim> {
+    async fn get_by_resource_and_user(
+        &self,
+        conn: Object,
+        resource_type: ResourceType,
+        resource_id: Uuid,
+        user_id: Uuid
+    ) -> Result<RewardClaim> {
         conn.interact(move |conn| {
             reward_claim::table
-                .filter(reward_claim::mission_id.eq(mission_id))
+                .filter(reward_claim::resource_type.eq(resource_type))
+                .filter(reward_claim::resource_id.eq(resource_id))
                 .filter(reward_claim::user_id.eq(user_id))
+                .select(RewardClaim::as_select())
                 .first::<RewardClaim>(conn)
         })
         .await?
@@ -47,6 +56,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
             reward_claim::table
                 .filter(reward_claim::user_id.eq(user_id))
                 .inner_join(reward_claim_detail::table)
+                .select((RewardClaim::as_select(), RewardClaimDetail::as_select())) 
                 .load::<(RewardClaim, RewardClaimDetail)>(conn)
         })
         .await?
@@ -58,6 +68,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
             diesel::update(reward_claim::table)
                 .filter(reward_claim::id.eq(reward_claim_id))
                 .set(reward_claim::reward_claim_status.eq(status))
+                .returning(RewardClaim::as_select()) 
                 .get_result::<RewardClaim>(conn)
         })
         .await?
@@ -72,7 +83,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
 mod tests {
     use super::*;
     use crate::adapter::output::persistence::db::_dev_utils;
-    use crate::domain::model::reward_claim::RewardClaimStatus;
+    use crate::domain::model::reward_claim::{ResourceType, RewardClaimStatus};
     use crate::domain::model::reward_claim_detail::NewRewardClaimDetail;
     use crate::port::output::reward_claim_repository::RewardClaimRepository;
     use crate::port::output::DbManager;
@@ -82,13 +93,15 @@ mod tests {
 
     #[serial]
     #[tokio::test]
-    async fn test_get_by_mission_and_user() -> Result<()> {
+    async fn test_get_by_resource_and_user() -> Result<()> {
         let db_manager = _dev_utils::init_test().await;
         let repo = PostgresRewardClaimRepository;
 
+        let resource_type = ResourceType::Mission;
         let new_reward_claim = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id: Uuid::new_v4(),
+            resource_id: Uuid::new_v4(),
+            resource_type: resource_type.clone(),
             coin_network_id: Uuid::new_v4(),
             amount: BigDecimal::from(20000),
             user_id: Uuid::new_v4(),
@@ -97,13 +110,16 @@ mod tests {
         };
 
         let inserted_claim = repo.insert(db_manager.get_connection().await?, new_reward_claim.clone()).await?;
-        let fetched_claim = repo.get_by_mission_and_user(db_manager.get_connection().await?, new_reward_claim.mission_id, new_reward_claim.user_id).await?;
+        let fetched_claim = repo.get_by_resource_and_user(db_manager.get_connection().await?, resource_type.clone(), new_reward_claim.resource_id, new_reward_claim.user_id).await?;
         assert_eq!(fetched_claim.id, inserted_claim.id);
-        assert_eq!(fetched_claim.mission_id, inserted_claim.mission_id);
+        assert_eq!(fetched_claim.resource_id, inserted_claim.resource_id);
         assert_eq!(fetched_claim.user_id, inserted_claim.user_id);
 
-        let not_found_claim = repo.get_by_mission_and_user(db_manager.get_connection().await?, Uuid::new_v4(), Uuid::new_v4()).await;
+        let not_found_claim = repo.get_by_resource_and_user(db_manager.get_connection().await?, resource_type.clone(), Uuid::new_v4(), Uuid::new_v4()).await;
         assert!(not_found_claim.is_err());
+
+        let not_found_claim2 = repo.get_by_resource_and_user(db_manager.get_connection().await?, ResourceType::DetailedPosting, new_reward_claim.resource_id, new_reward_claim.user_id).await;
+        assert!(not_found_claim2.is_err());
 
         Ok(())
     }
@@ -116,7 +132,8 @@ mod tests {
 
         let new_reward_claim = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id: Uuid::new_v4(),
+            resource_id: Uuid::new_v4(),
+            resource_type: ResourceType::Mission,
             coin_network_id: Uuid::new_v4(),
             amount: BigDecimal::from(10000),
             user_id: Uuid::new_v4(),
@@ -149,12 +166,13 @@ mod tests {
         let db_manager = _dev_utils::init_test().await;
         let repo = PostgresRewardClaimRepository;
 
-        let mission_id = Uuid::new_v4();
+        let resource_id = Uuid::new_v4();
         let user_id = Uuid::new_v4();
 
         let new_reward_claim_1 = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id,
+            resource_id,
+            resource_type: ResourceType::Mission,
             coin_network_id: Uuid::new_v4(),
             amount: BigDecimal::from(10000),
             user_id,
@@ -167,7 +185,8 @@ mod tests {
 
         let new_reward_claim_2 = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id,
+            resource_id,
+            resource_type: ResourceType::DetailedPosting,
             coin_network_id: Uuid::new_v4(),
             amount: BigDecimal::from(20000),
             user_id,
@@ -176,7 +195,22 @@ mod tests {
         };
 
         let result_2 = repo.insert(db_manager.get_connection().await?, new_reward_claim_2).await;
-        assert!(result_2.is_err()); 
+        assert!(result_2.is_ok()); 
+
+        let new_reward_claim_3 = NewRewardClaim {
+            id: Uuid::new_v4(),
+            resource_id,
+            resource_type: ResourceType::Mission,
+            coin_network_id: Uuid::new_v4(),
+            amount: BigDecimal::from(20000),
+            user_id,
+            user_address: "test_address_2".to_string(),
+            reward_claim_status: RewardClaimStatus::Ready,
+        };
+
+        let result_3 = repo.insert(db_manager.get_connection().await?, new_reward_claim_3).await;
+        assert!(result_3.is_err()); 
+
 
         Ok(())
     }
@@ -211,7 +245,8 @@ mod tests {
 
         let new_reward_claim_1 = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id: Uuid::new_v4(),
+            resource_id: Uuid::new_v4(),
+            resource_type: ResourceType::Mission,
             coin_network_id: Uuid::new_v4(),
             amount: BigDecimal::from(10000),
             user_id,
@@ -221,7 +256,8 @@ mod tests {
 
         let new_reward_claim_2 = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id: Uuid::new_v4(),
+            resource_id: Uuid::new_v4(),
+            resource_type: ResourceType::DetailedPosting,
             coin_network_id: Uuid::new_v4(),
             amount: BigDecimal::from(20000),
             user_id,
@@ -265,7 +301,8 @@ mod tests {
 
         let new_reward_claim = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id: Uuid::new_v4(),
+            resource_id: Uuid::new_v4(),
+            resource_type: ResourceType::Mission,
             coin_network_id: Uuid::new_v4(),
             amount: BigDecimal::from(10000),
             user_id: Uuid::new_v4(),

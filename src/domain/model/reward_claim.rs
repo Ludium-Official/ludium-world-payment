@@ -55,11 +55,53 @@ impl core::fmt::Display for RewardClaimStatus {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Identifiable)]
+
+#[derive(Clone, Debug, Serialize, Deserialize, DbEnum)]
+#[ExistingTypePath = "crate::adapter::output::persistence::db::schema::sql_types::ResourceType"]
+pub enum ResourceType {
+    #[db_rename = "MISSION"]
+    Mission,
+    #[db_rename = "DETAILED_POSTING"]
+    DetailedPosting    
+}
+
+impl From<String> for ResourceType {
+    fn from(resource_type: String) -> Self {
+        match resource_type.to_uppercase().as_str() {
+            "MISSION" => ResourceType::Mission,
+            "DETAILED_POSTING" => ResourceType::DetailedPosting,
+            _ => panic!("Invalid resource_type"), // You might want to handle this more gracefully
+        }
+    }
+}
+
+impl PartialEq for ResourceType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ResourceType::Mission, ResourceType::Mission) => true,
+            (ResourceType::DetailedPosting, ResourceType::DetailedPosting) => true,
+            (ResourceType::Mission, ResourceType::DetailedPosting) => false,
+            (ResourceType::DetailedPosting, ResourceType::Mission) => false,
+        }
+    }
+}
+
+
+impl core::fmt::Display for ResourceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResourceType::Mission => write!(f, "MISSION"),
+            ResourceType::DetailedPosting => write!(f, "DETAILED_POSTING"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Selectable)]
 #[diesel(table_name = reward_claim)]
 pub struct RewardClaim {
     pub id: Uuid,
-    pub mission_id: Uuid,
+    pub resource_id: Uuid,
+    pub resource_type: ResourceType,
     pub coin_network_id: Uuid,
     pub reward_claim_status: RewardClaimStatus,
     pub amount: BigDecimal,
@@ -73,7 +115,8 @@ pub struct RewardClaim {
 #[diesel(table_name = reward_claim)]
 pub struct NewRewardClaim {
     pub id: Uuid,
-    pub mission_id: Uuid,
+    pub resource_id: Uuid,
+    pub resource_type: ResourceType,
     pub coin_network_id: Uuid,
     pub reward_claim_status: RewardClaimStatus,
     pub amount: BigDecimal,   
@@ -84,7 +127,9 @@ pub struct NewRewardClaim {
 #[derive(Deserialize, Clone, ToSchema)]
 pub struct NewRewardClaimPayload {
     #[schema(value_type = String)]
-    pub mission_id: Uuid,
+    pub resource_id: Uuid,
+    #[schema(value_type = String, example = "MISSION | DETAILED_POSTING")]
+    pub resource_type: String,
     #[schema(value_type = String)]
     pub coin_network_id: Uuid,
     pub amount: String,
@@ -95,7 +140,8 @@ pub struct NewRewardClaimPayload {
 pub struct CombinedRewardClaimResponse {
     id: String,
     amount: String,
-    mission_id: String,
+    resource_id: String,
+    resource_type: String,
     coin_network: CoinNetworkDetailsResponse,
     user_id: String,
     user_address: String,
@@ -110,7 +156,8 @@ impl From<(RewardClaim, RewardClaimDetail, CoinNetwork, Coin, Network)> for Comb
         Self {
             id: claim.id.to_string(),
             amount: claim.amount.to_string(),
-            mission_id: claim.mission_id.to_string(),
+            resource_id: claim.resource_id.to_string(),
+            resource_type: claim.resource_type.to_string(),
             coin_network: CoinNetworkDetailsResponse::from((coin_network, coin, network)),
             user_id: claim.user_id.to_string(),
             user_address: claim.user_address,
@@ -126,7 +173,8 @@ impl From<(RewardClaim, RewardClaimDetail, CoinNetwork, Coin, Network)> for Comb
 pub struct RewardClaimResponse {
     id: String,
     amount: String,
-    mission_id: String,
+    resource_id: String,
+    resource_type: String,
     coin_network_id: String,
     user_id: String,
     user_address: String,
@@ -140,7 +188,8 @@ impl From<RewardClaim> for RewardClaimResponse {
         Self {
             id: claim.id.to_string(),
             amount: claim.amount.to_string(),
-            mission_id: claim.mission_id.to_string(),
+            resource_id: claim.resource_id.to_string(),
+            resource_type: claim.resource_type.to_string(),
             coin_network_id: claim.coin_network_id.to_string(),
             user_id: claim.user_id.to_string(),
             user_address: claim.user_address,

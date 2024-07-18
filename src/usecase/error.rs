@@ -13,6 +13,8 @@ pub enum Error {
     InvalidClaimStatusForApprove, 
     InvalidAmountConversion,
     MissionSubmitNotApproved,
+	InvalidResourceType { message: String },
+
 
     // --- 404
     CoinTypeNotSupported{
@@ -21,6 +23,7 @@ pub enum Error {
     CoinNetworkIdNotFound,
     UserIdNotFound,
     MissionSubmitIdNotFound,
+    DetailedPostingIdNotFound,
 
     // --- 409
     RewardClaimDuplicate,
@@ -69,6 +72,10 @@ impl Error {
                 StatusCode::NOT_FOUND,
                 format!("Mission Submit Id Not Found"),
             ),
+            Self::DetailedPostingIdNotFound => (
+                StatusCode::NOT_FOUND,
+                format!("Detailed Posting Id Not Found")
+            ),
             Self::RewardClaimDuplicate => (
                 StatusCode::CONFLICT,
                 "Mission already claimed".to_string()
@@ -92,6 +99,10 @@ impl Error {
             Self::MissionSubmitNotApproved => (
                 StatusCode::BAD_REQUEST,
                 "Mission Submit Not Approved".to_string(),
+            ),
+            Self::InvalidResourceType { message } => (
+                StatusCode::BAD_REQUEST,
+                message.to_string(),
             ),
             Self::InternalServerError { .. } => (
                 StatusCode::INTERNAL_SERVER_ERROR,

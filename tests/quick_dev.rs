@@ -32,7 +32,7 @@ fn create_headers(header_type: &str,
 #[ignore]
 #[tokio::test]
 async fn quick_dev() -> Result<()> {
-    let headers = create_headers("admin");
+    let headers = create_headers("provider");
     let client = reqwest::Client::builder()
         .default_headers(headers);
     
@@ -77,23 +77,57 @@ async fn quick_reward() -> Result<()> {
         "password": "welcome"
     })).await?.print().await?;
 
-    // reward_claims
+    // reward_claims - mission
+    // 1. failed - mission_sumbit.status = SUBMIT
     hc.do_post("/api/reward-claims", json!({
-        "mission_id": "10000000-0000-0000-0000-000000000001",
+        "resource_id": "10000000-0000-0000-0000-000000000001",
+        "resource_type": "MISSION",
         "coin_network_id": "22222222-0000-0000-0000-000000000001", // usdt
         "amount": "0.00001",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
+    // 2. success - mission_sumbit.status = APPROVE
     hc.do_post("/api/reward-claims", json!({
-        "mission_id": "10000000-0000-0000-0000-000000000002",
+        "resource_id": "10000000-0000-0000-0000-000000000002",
+        "resource_type": "mission",
         "coin_network_id": "22222222-0000-0000-0000-000000000001", // usdt
         "amount": "0.00001",
         "user_address": "nomnomnom.testnet"
     })).await?.print().await?;
 
+    // 3. success - mission_sumbit.status = APPROVE
     hc.do_post("/api/reward-claims", json!({
-        "mission_id": "10000000-0000-0000-0000-000000000003",
+        "resource_id": "10000000-0000-0000-0000-000000000003",
+        "resource_type": "MISSION",
+        "coin_network_id": "33333333-9c58-47f8-9a0f-2d0c8d3f807f", // near 
+        "amount": "0.00001",
+        "user_address": "nomnomnom.testnet"
+    })).await?.print().await?;
+
+    // reward_claims - detailed_posting 
+    // 1. success - detailed_posting.status = CREATE
+    hc.do_post("/api/reward-claims", json!({
+        "resource_id": "33333333-0000-0000-0000-000000000001",
+        "resource_type": "DETAILED_POSTING",
+        "coin_network_id": "22222222-0000-0000-0000-000000000001", // usdt
+        "amount": "0.00001",
+        "user_address": "nomnomnom.testnet"
+    })).await?.print().await?;
+
+    // 2. success - detailed_posting.status = APPROVE
+    hc.do_post("/api/reward-claims", json!({
+        "resource_id": "33333333-0000-0000-0000-000000000002",
+        "resource_type": "DETAILED_POSTING",
+        "coin_network_id": "22222222-0000-0000-0000-000000000001", // usdt
+        "amount": "0.00001",
+        "user_address": "nomnomnom.testnet"
+    })).await?.print().await?;
+
+    // 3. success - detailed_posting.status = CLOSED
+    hc.do_post("/api/reward-claims", json!({
+        "resource_id": "33333333-0000-0000-0000-000000000003",
+        "resource_type": "DETAILED_POSTING",
         "coin_network_id": "33333333-9c58-47f8-9a0f-2d0c8d3f807f", // near 
         "amount": "0.00001",
         "user_address": "nomnomnom.testnet"

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use crate::adapter::output::persistence::db::postgres::detailed_posting_repository_impl::PostgresDetailedPostingRepository;
 use crate::adapter::output::persistence::db::postgres::mission_repository_impl::PostgresMissionSubmitRepository;
 use crate::adapter::output::persistence::db::postgres::{PostgresDbManager, user_repository_impl::PostgresUserRepository};
 use crate::config::Config;
@@ -41,6 +42,7 @@ impl AppState {
         let coin_network_repo = Arc::new(PostgresCoinNetworkRepository);
         let reward_claim_repo = Arc::new(PostgresRewardClaimRepository);
         let mission_submit_repo = Arc::new(PostgresMissionSubmitRepository);
+        let detailed_posting_repo = Arc::new(PostgresDetailedPostingRepository);
         let near_rpc_manager = Arc::new(NearRpcManager::new(
             config.near_network_config().rpc_client(),
             config.signer().clone(),
@@ -54,6 +56,7 @@ impl AppState {
             Arc::clone(&near_rpc_manager),
             Arc::clone(&user_repo),
             Arc::clone(&mission_submit_repo),
+            Arc::clone(&detailed_posting_repo),
         ));
 
         Ok(Self {

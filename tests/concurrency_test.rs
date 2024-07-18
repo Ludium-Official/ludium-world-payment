@@ -1,3 +1,5 @@
+// ! user, resoure validation은 고려하지 않는다. 
+
 use std::sync::{atomic::{AtomicUsize, Ordering}, Arc};
 use anyhow::Result;
 use serde_json::json;
@@ -213,7 +215,8 @@ async fn test_multi_reward() -> Result<()> {
 
 async fn send_reward_claim(hc: Arc<httpc_test::Client>, mission_id: &str) -> Result<String> {
     let response = hc.do_post("/api/reward-claims", json!({
-        "mission_id": mission_id,
+        "resource_id": mission_id,
+        "resource_type": "MISSION",
         // "coin_network_id": "22222222-0000-0000-0000-000000000001",
         "coin_network_id": "33333333-9c58-47f8-9a0f-2d0c8d3f807f",
         "amount": "0.00001",

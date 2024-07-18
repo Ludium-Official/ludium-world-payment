@@ -43,3 +43,12 @@ INSERT INTO public.coin_network (id, coin_id, network_id, contract_address) VALU
 ('22222222-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001', '86b82d0f-80d5-4406-ae5a-e387db79ca32', 'tt_local.testnet'),
 ('22222222-9c58-47f8-9a0f-2d0c8d3f807f', '11111111-0000-0000-0000-000000000002', '86b82d0f-80d5-4406-ae5a-e387db79ca32', 'usdt.fakes.testnet'),
 ('33333333-9c58-47f8-9a0f-2d0c8d3f807f', '11111111-0000-0000-0000-000000000003', '86b82d0f-80d5-4406-ae5a-e387db79ca32', NULL);
+
+-- Insert into detailed_posting table
+INSERT INTO public.detailed_posting (detail_id, posting_id, title, description, deadline, status, is_pinned, pin_order, reward_token, reward_amount)
+VALUES
+    ('33333333-0000-0000-0000-000000000001', '44444444-0000-0000-0000-000000000001', 'First Posting', 'Description for the first posting', '2024-12-31 23:59:59', 'CREATE', false, -1, '22222222-0000-0000-0000-000000000001', 100.00),
+    ('33333333-0000-0000-0000-000000000002', '44444444-0000-0000-0000-000000000002', 'Second Posting', 'Description for the second posting', '2024-11-30 23:59:59', 'APPROVE', true, 1, '22222222-9c58-47f8-9a0f-2d0c8d3f807f', 200.00),
+    ('33333333-0000-0000-0000-000000000003', '44444444-0000-0000-0000-000000000003', 'Third Posting', 'Description for the third posting', '2024-10-31 23:59:59', 'CLOSED', false, -1, '33333333-9c58-47f8-9a0f-2d0c8d3f807f', 300.00),
+    ('33333333-0000-0000-0000-000000000004', '44444444-0000-0000-0000-000000000004', 'Fourth Posting', 'Description for the fourth posting', '2024-09-30 23:59:59', 'CREATE', true, 2, '22222222-0000-0000-0000-000000000001', 150.00),
+    ('33333333-0000-0000-0000-000000000005', '44444444-0000-0000-0000-000000000005', 'Fifth Posting', 'Description for the fifth posting', '2024-08-31 23:59:59', 'APPROVE', false, -1, '22222222-9c58-47f8-9a0f-2d0c8d3f807f', 250.00);

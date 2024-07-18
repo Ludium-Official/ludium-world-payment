@@ -5,10 +5,10 @@ use uuid::Uuid;
 use crate::{
     adapter::output::near::{retry_async, rpc_client::NearRpcManager, MAX_RETRY_COUNT, RETRY_DELAY}, domain::model::{
         coin::{Coin, CoinType}, coin_network::CoinNetwork, near::{TransactionResultResponse, TransferActionType}, network::Network, reward_claim::{
-            CombinedRewardClaimResponse, NewRewardClaim, NewRewardClaimPayload, RewardClaim, RewardClaimStatus
+            CombinedRewardClaimResponse, NewRewardClaim, NewRewardClaimPayload, ResourceType, RewardClaim, RewardClaimStatus
         }, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}
     }, port::output::{
-        coin_network_repository::CoinNetworkRepository, mission_submit_repository::MissionSubmitRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager, UserRepository
+        coin_network_repository::CoinNetworkRepository, detailed_posting_repository::DetailedPostingRepository, mission_submit_repository::MissionSubmitRepository, reward_claim_repository::RewardClaimRepository, rpc_client::RpcClient, DbManager, UserRepository
     }
 };
 use super::error::{Error, Result};
@@ -16,24 +16,26 @@ use super::utrait::reward_claim_usecase::RewardClaimUsecase;
 use std::str::FromStr;
 use near_primitives::types::AccountId;
 
-pub struct RewardClaimUsecaseImpl<D: DbManager, R: RewardClaimRepository, C: CoinNetworkRepository, U: UserRepository, MS: MissionSubmitRepository> {
+pub struct RewardClaimUsecaseImpl<D: DbManager, R: RewardClaimRepository, C: CoinNetworkRepository, U: UserRepository, MS: MissionSubmitRepository, DP: DetailedPostingRepository> {
     db_manager: Arc<D>,
     reward_claim_repo: Arc<R>,
     coin_network_repo: Arc<C>,
     near_rpc_manager: Arc<NearRpcManager>,
     user_repo: Arc<U>,
     mission_submit_repo: Arc<MS>,
+    detailed_posting_repo: Arc<DP>,
 }
 
-impl<D, R, C, U, MS> RewardClaimUsecaseImpl<D, R, C, U, MS>
+impl<D, R, C, U, MS, DP> RewardClaimUsecaseImpl<D, R, C, U, MS, DP>
 where
     D: DbManager + Send + Sync,
     R: RewardClaimRepository + Send + Sync,
     C: CoinNetworkRepository + Send + Sync,
     U: UserRepository + Send + Sync,
     MS: MissionSubmitRepository + Send + Sync,
+    DP: DetailedPostingRepository + Send + Sync,
 {
-    pub fn new(db_manger: Arc<D>, reward_claim_repo: Arc<R>, coin_network_repo: Arc<C>, near_rpc_manager: Arc<NearRpcManager>, user_repo: Arc<U>, mission_submit_repo: Arc<MS>) -> Self {
+    pub fn new(db_manger: Arc<D>, reward_claim_repo: Arc<R>, coin_network_repo: Arc<C>, near_rpc_manager: Arc<NearRpcManager>, user_repo: Arc<U>, mission_submit_repo: Arc<MS>, detailed_posting_repo: Arc<DP>) -> Self {
         Self {
             db_manager: db_manger,
             reward_claim_repo,
@@ -41,18 +43,20 @@ where
             near_rpc_manager,
             user_repo,
             mission_submit_repo,
+            detailed_posting_repo,
         }
     }
 }
 
 #[async_trait]
-impl<D, R, C, U, MS> RewardClaimUsecase for RewardClaimUsecaseImpl<D, R, C, U, MS>
+impl<D, R, C, U, MS, DP> RewardClaimUsecase for RewardClaimUsecaseImpl<D, R, C, U, MS, DP>
 where 
     D: DbManager + Send + Sync,
     R: RewardClaimRepository + Send + Sync,
     C: CoinNetworkRepository + Send + Sync,
     U: UserRepository + Send + Sync,
     MS: MissionSubmitRepository + Send + Sync,
+    DP: DetailedPostingRepository + Send + Sync,
 {
     async fn get_me_reward_claim(&self, user_id: Uuid) -> Result<Vec<CombinedRewardClaimResponse>> {
         let db_manager = &self.db_manager;
@@ -83,23 +87,39 @@ where
 
     async fn create_reward_claim(&self, user_id: Uuid, payload: NewRewardClaimPayload) -> Result<CombinedRewardClaimResponse> {
         let db_manager = &self.db_manager;
-        
+    
         // --- user validation
-        self.user_repo.get(db_manager.get_connection().await?.into(), user_id).await.map_err(|_| {
-            tracing::error!("User Not Found: {}", user_id.to_string());
-            Error::UserIdNotFound
-        })?;
+        // self.user_repo.get(db_manager.get_connection().await?.into(), user_id).await.map_err(|_| {
+        //     tracing::error!("User Not Found: {}", user_id.to_string());
+        //     Error::UserIdNotFound
+        // })?;
 
-        // --- mission_submit validation
-        let mission_submit = self.mission_submit_repo.get(db_manager.get_connection().await?.into(), user_id, payload.mission_id)
-            .await.map_err(|_| {
-                tracing::error!("Mission Submit Not Found: {}", payload.mission_id.to_string());
-                Error::MissionSubmitIdNotFound
-            })?;
+        // --- resource validation
+        let resource_type = match payload.resource_type.to_uppercase().as_str() {
+            "MISSION" => ResourceType::Mission,
+            "DETAILED_POSTING" => ResourceType::DetailedPosting,
+            _ => return Err(Error::InvalidResourceType{ message: format!("Invalid resource_type: {}", payload.resource_type) }),
+        };
 
-        if !mission_submit.is_approved() {
-            tracing::error!("Mission Submit Not Approved: {}", payload.mission_id.to_string());
-            return Err(Error::MissionSubmitNotApproved);
+        if resource_type == ResourceType::Mission {
+              // --- mission_submit validation
+            // let mission_submit = self.mission_submit_repo.get(db_manager.get_connection().await?.into(), user_id, payload.resource_id)
+            //     .await.map_err(|_| {
+            //         tracing::error!("Mission Submit Not Found: {}", payload.resource_id.to_string());
+            //         Error::MissionSubmitIdNotFound
+            //     })?;
+
+            // if !mission_submit.is_approved() {
+            //     tracing::error!("Mission Submit Not Approved: {}", payload.resource_id.to_string());
+            //     return Err(Error::MissionSubmitNotApproved);
+            // }
+        } else {
+            // --- detailed_posting validation
+            let _detailed_posting = self.detailed_posting_repo.get(db_manager.get_connection().await?.into(), payload.resource_id)
+                .await.map_err(|_| {
+                    tracing::error!("Detailed Posting Not Found: {}", payload.resource_id.to_string());
+                    Error::DetailedPostingIdNotFound
+                })?;
         }
 
         // todo: payload validation2) user mission 금액 일치하는지 확인
@@ -115,9 +135,9 @@ where
                 Error::CoinNetworkIdNotFound
             })?;
 
-        // --- user 당 mission 중복 요청 방지 
-        if self.reward_claim_repo.get_by_mission_and_user(db_manager.get_connection().await?.into(), payload.mission_id, user_id).await.is_ok() {
-            tracing::error!("Reward Claim Duplicate: Mission Id: {}, User Id: {}", payload.mission_id, user_id);
+        // --- user 중복 요청 방지 
+        if self.reward_claim_repo.get_by_resource_and_user(db_manager.get_connection().await?.into(), resource_type.clone(), payload.resource_id, user_id).await.is_ok() {
+            tracing::error!("Reward Claim Duplicate: Resource Id: {}, Resource Type: {}, User Id: {}", payload.resource_id, resource_type.clone(), user_id);
             return Err(Error::RewardClaimDuplicate);
         }
 
@@ -128,7 +148,8 @@ where
         // --- READY
         let new_reward_claim = NewRewardClaim {
             id: Uuid::new_v4(),
-            mission_id: payload.mission_id,
+            resource_id: payload.resource_id,
+            resource_type: resource_type.clone(),
             coin_network_id: payload.coin_network_id,
             reward_claim_status: RewardClaimStatus::Ready,
             amount: amount_in_smallest_unit.clone(),

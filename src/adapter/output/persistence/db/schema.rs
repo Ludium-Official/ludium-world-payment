@@ -6,6 +6,10 @@ pub mod sql_types {
     pub struct CoinType;
 
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "resource_type"))]
+    pub struct ResourceType;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "reward_claim_status"))]
     pub struct RewardClaimStatus;
 }
@@ -36,6 +40,25 @@ diesel::table! {
         contract_address -> Nullable<Varchar>,
         created_date -> Timestamp,
         updated_date -> Timestamp,
+    }
+}
+
+diesel::table! {
+    detailed_posting (detail_id) {
+        detail_id -> Uuid,
+        posting_id -> Uuid,
+        #[max_length = 255]
+        title -> Nullable<Varchar>,
+        description -> Nullable<Text>,
+        deadline -> Nullable<Timestamp>,
+        #[max_length = 50]
+        status -> Varchar,
+        is_pinned -> Bool,
+        pin_order -> Int4,
+        reward_token -> Nullable<Uuid>,
+        reward_amount -> Nullable<Numeric>,
+        create_at -> Timestamp,
+        update_at -> Timestamp,
     }
 }
 
@@ -78,10 +101,10 @@ diesel::table! {
 diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::RewardClaimStatus;
+    use super::sql_types::ResourceType;
 
     reward_claim (id) {
         id -> Uuid,
-        mission_id -> Uuid,
         coin_network_id -> Uuid,
         reward_claim_status -> RewardClaimStatus,
         amount -> Numeric,
@@ -90,6 +113,8 @@ diesel::table! {
         user_address -> Varchar,
         created_date -> Timestamp,
         updated_date -> Timestamp,
+        resource_type -> ResourceType,
+        resource_id -> Uuid,
     }
 }
 
@@ -138,6 +163,7 @@ diesel::joinable!(tb_ldm_usr_rgh -> tb_ldm_usr (id));
 diesel::allow_tables_to_appear_in_same_query!(
     coin,
     coin_network,
+    detailed_posting,
     mission,
     mission_submit,
     network,

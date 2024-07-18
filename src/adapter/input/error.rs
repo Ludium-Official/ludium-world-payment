@@ -73,7 +73,6 @@ impl Error {
 				StatusCode::BAD_REQUEST,
 				message.to_string(),
 			),
-
 			// -- Output
 			Self::Postgres(error) => error.client_status_and_error(),
 			Self::Near(error) => error.client_status_and_error(),

@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{extract::State, routing::post, Json, Router};
 use crate::adapter::input::{ctx::Ctx, error::Error};
-use crate::domain::model::reward_claim::{NewRewardClaimPayload, CombinedRewardClaimResponse};
+use crate::domain::model::reward_claim::{CombinedRewardClaimResponse, NewRewardClaimPayload};
 use crate::AppState;
 use crate::adapter::input::error::Result;
 use uuid::Uuid;
@@ -37,6 +37,7 @@ pub async fn create_reward_claim(
 ) -> Result<impl IntoResponse> {
     let user_id = Uuid::parse_str(ctx.user_info().user_id())
         .map_err(|_| Error::UUIDParsingError{ message: format!("invalid User UUID : {}", ctx.user_info().user_id())})?;
+
     let reward_claim = state.reward_claim_usecase.create_reward_claim(user_id, new_reward_claim_payload).await?;
     Ok((StatusCode::CREATED, Json(CombinedRewardClaimResponse::from(reward_claim))))
 }

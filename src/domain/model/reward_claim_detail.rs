@@ -8,7 +8,7 @@ use crate::adapter::output::persistence::db::schema::reward_claim_detail;
 use crate::domain::model::reward_claim::RewardClaim;
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Associations)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Associations, Selectable)]
 #[diesel(table_name = reward_claim_detail)]
 #[diesel(belongs_to(RewardClaim))]
 pub struct RewardClaimDetail {
