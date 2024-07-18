@@ -89,10 +89,10 @@ where
         let db_manager = &self.db_manager;
     
         // --- user validation
-        // self.user_repo.get(db_manager.get_connection().await?.into(), user_id).await.map_err(|_| {
-        //     tracing::error!("User Not Found: {}", user_id.to_string());
-        //     Error::UserIdNotFound
-        // })?;
+        self.user_repo.get(db_manager.get_connection().await?.into(), user_id).await.map_err(|_| {
+            tracing::error!("User Not Found: {}", user_id.to_string());
+            Error::UserIdNotFound
+        })?;
 
         // --- resource validation
         let resource_type = match payload.resource_type.to_uppercase().as_str() {
@@ -103,16 +103,16 @@ where
 
         if resource_type == ResourceType::Mission {
               // --- mission_submit validation
-            // let mission_submit = self.mission_submit_repo.get(db_manager.get_connection().await?.into(), user_id, payload.resource_id)
-            //     .await.map_err(|_| {
-            //         tracing::error!("Mission Submit Not Found: {}", payload.resource_id.to_string());
-            //         Error::MissionSubmitIdNotFound
-            //     })?;
+            let mission_submit = self.mission_submit_repo.get(db_manager.get_connection().await?.into(), user_id, payload.resource_id)
+                .await.map_err(|_| {
+                    tracing::error!("Mission Submit Not Found: {}", payload.resource_id.to_string());
+                    Error::MissionSubmitIdNotFound
+                })?;
 
-            // if !mission_submit.is_approved() {
-            //     tracing::error!("Mission Submit Not Approved: {}", payload.resource_id.to_string());
-            //     return Err(Error::MissionSubmitNotApproved);
-            // }
+            if !mission_submit.is_approved() {
+                tracing::error!("Mission Submit Not Approved: {}", payload.resource_id.to_string());
+                return Err(Error::MissionSubmitNotApproved);
+            }
         } else {
             // --- detailed_posting validation
             let _detailed_posting = self.detailed_posting_repo.get(db_manager.get_connection().await?.into(), payload.resource_id)

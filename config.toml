@@ -5,15 +5,15 @@
 # Please note this is for reference only and you should be updating the values in the `config.toml` file found in the `pagoda-relayer-rs` directory.
 
 # replace with the account id of the public key you will use to sign relay transactions - this should match the account_id in your json file
-# relayer_account_id = "nomnomnom.testnet"
-relayer_account_id = "won999.testnet"
+relayer_account_id = "nomnomnom.testnet"
+# relayer_account_id = "won999.testnet"
 
 
 # this is a list of jsons from json key files containing 3 entries: account_id, public_key, secret_key
 # NOTE: If you copy/paste the json from the key files, you might need to change private_key to secret_key
 # NOTE: account_id for all keys used should match as they should be derived from the same account_id
 # this is recommended for high throughput use cases to prevent nonce race conditions
-keys_filename = "./account_keys/won999.testnet.json"
+keys_filename = "./account_keys/nomnomnom.testnet.json"
 
 ## near network and rpc url
 near_network="testnet"
@@ -27,4 +27,3 @@ whitelisted_contracts = []
 # can be sent from all users
 # if empty, just pass the validation
 whitelisted_senders = []
-
