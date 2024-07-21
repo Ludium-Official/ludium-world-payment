@@ -37,7 +37,6 @@ pub async fn mapper(
 
 	let client_error_message = client_status_error.unzip().1;
 
-	// TODO: Need to hander if log_request fail (but should not fail request)
 	let _ =
 		log_request(uuid, req_method, uri, ctx, service_error, client_error_message.clone().as_ref()).await;
 

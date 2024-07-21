@@ -124,6 +124,13 @@ pub struct NewRewardClaim {
     pub user_address: String,
 }
 
+#[derive(AsChangeset)]
+#[diesel(table_name = reward_claim)]
+pub struct UpdateRewardClaimStatus {
+    pub reward_claim_status: RewardClaimStatus,
+    pub updated_date: NaiveDateTime,
+}
+
 #[derive(Deserialize, Clone, ToSchema)]
 pub struct NewRewardClaimPayload {
     #[schema(value_type = String)]

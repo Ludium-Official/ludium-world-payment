@@ -224,7 +224,7 @@ async fn test_multi_reward() -> Result<()> {
             Transaction Approved: 0
             Transaction Failed: 0
             Api Error: 20
-        -> 재시도 불가능한 오류이기 때문에 모두 Api Error로 분류됨 
+        -> 내부적으로 재시도 불가능한 오류이기 때문에 모두 Api Error로 분류됨 
 
  * Total: 500
         트랜잭션 재시도 10, 재시도 시간 1초
