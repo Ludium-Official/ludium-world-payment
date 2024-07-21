@@ -79,7 +79,7 @@ impl Error {
             ),
             Self::RewardClaimDuplicate => (
                 StatusCode::CONFLICT,
-                "Mission already claimed".to_string()
+                "Reward already claimed".to_string()
             ),
             Self::TranscationActionVerifyFailed => (
                 StatusCode::BAD_REQUEST,
@@ -122,6 +122,10 @@ impl Error {
                 message.to_string(),
             ),
 
+            Self::AdapterOutputDB(db::Error::QueryError(ref msg)) if msg == "Transaction rollback" => (
+                StatusCode::CONFLICT,
+                "Reward already claimed".to_string()
+            ),
             Self::AdapterOutputDB(error) => error.client_status_and_error(),
             Self::AdapterOutptuNear(error) => error.client_status_and_error(),
 

@@ -35,6 +35,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
                 .filter(reward_claim::resource_id.eq(resource_id))
                 .filter(reward_claim::user_id.eq(user_id))
                 .select(RewardClaim::as_select())
+                .for_update()
                 .first::<RewardClaim>(conn)
         })
         .await?
@@ -63,13 +64,29 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
         .map_err(|e| Error::from(adapt_db_error(e)))
     }
 
-    async fn update_status(&self, conn: Object, reward_claim_id: Uuid, status: RewardClaimStatus) -> Result<RewardClaim>{
+    async fn update_status(&self, conn: Object, reward_claim_id: Uuid, status: RewardClaimStatus, retryable: bool) -> Result<RewardClaim>{
         conn.interact(move |conn| {
-            diesel::update(reward_claim::table)
-                .filter(reward_claim::id.eq(reward_claim_id))
-                .set(reward_claim::reward_claim_status.eq(status))
-                .returning(RewardClaim::as_select()) 
-                .get_result::<RewardClaim>(conn)
+            conn.transaction(|conn| {
+                let target_claim = reward_claim::table
+                    .filter(reward_claim::id.eq(reward_claim_id))
+                    .for_update()
+                    .select(RewardClaim::as_select()) 
+                    .first::<RewardClaim>(conn)?;
+                
+                if retryable && target_claim.reward_claim_status == RewardClaimStatus::Ready {
+                    tracing::error!(
+                        "[Ready - update failed] Reward Claim Duplicate: Resource Id: {}, Resource Type: {}, User Id: {}",
+                        target_claim.resource_id, target_claim.resource_type, target_claim.user_id
+                    );
+                    return Err(diesel::result::Error::RollbackTransaction);
+                }
+
+                diesel::update(reward_claim::table)
+                    .filter(reward_claim::id.eq(target_claim.id))
+                    .set(reward_claim::reward_claim_status.eq(status))
+                    .returning(RewardClaim::as_select())
+                    .get_result::<RewardClaim>(conn)
+            })
         })
         .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
@@ -311,7 +328,7 @@ mod tests {
         };
 
         let inserted_claim = repo.insert(db_manager.get_connection().await?, new_reward_claim.clone()).await?;
-        let updated_claim = repo.update_status(db_manager.get_connection().await?, inserted_claim.id, RewardClaimStatus::TransactionApproved).await?;
+        let updated_claim = repo.update_status(db_manager.get_connection().await?, inserted_claim.id, RewardClaimStatus::TransactionApproved, false).await?;
         
         assert_eq!(updated_claim.reward_claim_status, RewardClaimStatus::TransactionApproved);
 

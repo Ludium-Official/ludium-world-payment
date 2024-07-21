@@ -46,6 +46,92 @@ where
             detailed_posting_repo,
         }
     }
+
+    async fn validate_user(&self, user_id: Uuid) -> Result<()> {
+        self.user_repo.get(self.db_manager.get_connection().await?.into(), user_id).await.map_err(|_| {
+            tracing::error!("User Not Found: {}", user_id.to_string());
+            Error::UserIdNotFound
+        })?;
+        Ok(())
+    }
+
+    async fn validate_resource(&self, resource_type_str: &str, user_id: Uuid, resource_id: Uuid) -> Result<ResourceType> {
+        let resource_type = match resource_type_str.to_uppercase().as_str() {
+            "MISSION" => ResourceType::Mission,
+            "DETAILED_POSTING" => ResourceType::DetailedPosting,
+            _ => return Err(Error::InvalidResourceType{ message: format!("Invalid resource_type: {}", resource_type_str) }),
+        };
+
+        if resource_type == ResourceType::Mission {
+            // --- mission_submit validation
+            let mission_submit = self.mission_submit_repo.get(self.db_manager.get_connection().await?.into(), user_id, resource_id).await.map_err(|_| {
+                tracing::error!("Mission Submit Not Found: {}", resource_id.to_string());
+                Error::MissionSubmitIdNotFound
+            })?;
+            if !mission_submit.is_approved() {
+                tracing::error!("Mission Submit Not Approved: {}", resource_id.to_string());
+                return Err(Error::MissionSubmitNotApproved);
+            }
+        } else {
+            // --- detailed_posting validation
+            let detailed_posting = self.detailed_posting_repo.get(self.db_manager.get_connection().await?.into(), resource_id).await.map_err(|_| {
+                tracing::error!("Detailed Posting Not Found: {}", resource_id.to_string());
+                Error::DetailedPostingIdNotFound
+            })?;
+            if !detailed_posting.is_approved() {
+                tracing::error!("Detailed Posting Not Approved: {}", resource_id.to_string());
+                return Err(Error::DetailedPostingNotApproved);
+            }
+        }
+        Ok(resource_type)
+    }
+
+    async fn handle_existing_reward_claim(&self, existed_reward_claim: RewardClaim) -> Result<()> {
+        match existed_reward_claim.reward_claim_status {
+            // --- user 중복 요청 방지 (only READY, TRANSACTION_APPROVED)
+            RewardClaimStatus::Ready => {
+                tracing::error!("[Ready] Reward Claim Duplicate: Resource Id: {}, Resource Type: {}, User Id: {}", existed_reward_claim.resource_id, existed_reward_claim.resource_type, existed_reward_claim.user_id);
+                return Err(Error::RewardClaimDuplicate);
+            }
+            RewardClaimStatus::TransactionApproved => {
+                tracing::error!("[TransactionApproved] Reward Claim Duplicate: Resource Id: {}, Resource Type: {}, User Id: {}", existed_reward_claim.resource_id, existed_reward_claim.resource_type, existed_reward_claim.user_id);
+                return Err(Error::RewardClaimDuplicate);
+            }
+            RewardClaimStatus::TransactionFailed => {
+                // --- 실패한 트랜잭션 재시도 (TRANSACTION_FAILED -> READY)
+                tracing::debug!(
+                    "[Retry][TransactionFailed -> Ready] Reward Claim Transaction Failed: Resource Id: {}, Resource Type: {}, User Id: {}. Retrying...",
+                    existed_reward_claim.resource_id,
+                    existed_reward_claim.resource_type,
+                    existed_reward_claim.user_id
+                );
+                self.reward_claim_repo.update_status(
+                    self.db_manager.get_connection().await?.into(),
+                    existed_reward_claim.id,
+                    RewardClaimStatus::Ready,
+                    true
+                ).await?;
+            }
+        }
+        Ok(())
+    }
+
+    async fn create_new_reward_claim(&self, payload: &NewRewardClaimPayload, resource_type: ResourceType, amount_in_smallest_unit: BigDecimal, user_id: Uuid) -> Result<RewardClaim> {
+        let new_reward_claim = NewRewardClaim {
+            id: Uuid::new_v4(),
+            resource_id: payload.resource_id,
+            resource_type: resource_type.clone(),
+            coin_network_id: payload.coin_network_id,
+            reward_claim_status: RewardClaimStatus::Ready,
+            amount: amount_in_smallest_unit.clone(),
+            user_id,
+            user_address: payload.user_address.clone(),
+        };
+        
+        let reward_claim = self.reward_claim_repo.insert(self.db_manager.get_connection().await?.into(), new_reward_claim).await?;
+        Ok(reward_claim)
+    }
+
 }
 
 #[async_trait]
@@ -89,47 +175,12 @@ where
         let db_manager = &self.db_manager;
     
         // --- user validation
-        self.user_repo.get(db_manager.get_connection().await?.into(), user_id).await.map_err(|_| {
-            tracing::error!("User Not Found: {}", user_id.to_string());
-            Error::UserIdNotFound
-        })?;
+        self.validate_user(user_id).await?;
 
         // --- resource validation
-        let resource_type = match payload.resource_type.to_uppercase().as_str() {
-            "MISSION" => ResourceType::Mission,
-            "DETAILED_POSTING" => ResourceType::DetailedPosting,
-            _ => return Err(Error::InvalidResourceType{ message: format!("Invalid resource_type: {}", payload.resource_type) }),
-        };
-
-        if resource_type == ResourceType::Mission {
-              // --- mission_submit validation
-            let mission_submit = self.mission_submit_repo.get(db_manager.get_connection().await?.into(), user_id, payload.resource_id)
-                .await.map_err(|_| {
-                    tracing::error!("Mission Submit Not Found: {}", payload.resource_id.to_string());
-                    Error::MissionSubmitIdNotFound
-                })?;
-
-            if !mission_submit.is_approved() {
-                tracing::error!("Mission Submit Not Approved: {}", payload.resource_id.to_string());
-                return Err(Error::MissionSubmitNotApproved);
-            }
-        } else {
-            // --- detailed_posting validation
-            let detailed_posting = self.detailed_posting_repo.get(db_manager.get_connection().await?.into(), payload.resource_id)
-                .await.map_err(|_| {
-                    tracing::error!("Detailed Posting Not Found: {}", payload.resource_id.to_string());
-                    Error::DetailedPostingIdNotFound
-                })?;
-
-            if !detailed_posting.is_approved() {
-                tracing::error!("Detailed Posting Not Approved: {}", payload.resource_id.to_string());
-                return Err(Error::DetailedPostingNotApproved);
-            }
-            
-        }
+        let resource_type = self.validate_resource(&payload.resource_type, user_id, payload.resource_id).await?;
 
         // todo: payload validation2) user mission 금액 일치하는지 확인
-        
         let (coin_network, coin, network) = self.coin_network_repo
             .get_with_coin_and_network(
                 self.db_manager.get_connection().await?.into(),
@@ -141,29 +192,22 @@ where
                 Error::CoinNetworkIdNotFound
             })?;
 
-        // --- user 중복 요청 방지 
-        if self.reward_claim_repo.get_by_resource_and_user(db_manager.get_connection().await?.into(), resource_type.clone(), payload.resource_id, user_id).await.is_ok() {
-            tracing::error!("Reward Claim Duplicate: Resource Id: {}, Resource Type: {}, User Id: {}", payload.resource_id, resource_type.clone(), user_id);
-            return Err(Error::RewardClaimDuplicate);
-        }
 
         let scale_factor = BigDecimal::from_str(&format!("1e{}", coin.decimals)).expect("Invalid decimal format");
-        let amount_decimal = BigDecimal::from_str(&payload.amount).expect("Invalid amount format");
+        let amount_decimal: BigDecimal = BigDecimal::from_str(&payload.amount).expect("Invalid amount format");
         let amount_in_smallest_unit = amount_decimal * scale_factor;
-
-        // --- READY
-        let new_reward_claim = NewRewardClaim {
-            id: Uuid::new_v4(),
-            resource_id: payload.resource_id,
-            resource_type: resource_type.clone(),
-            coin_network_id: payload.coin_network_id,
-            reward_claim_status: RewardClaimStatus::Ready,
-            amount: amount_in_smallest_unit.clone(),
-            user_id: user_id,
-            user_address: payload.user_address.clone(),
+        
+        let existed_reward_claim_result = self.reward_claim_repo.get_by_resource_and_user(db_manager.get_connection().await?.into(), resource_type.clone(), payload.resource_id, user_id).await;
+        let reward_claim = match existed_reward_claim_result {
+            Ok(existed_reward_claim) => {
+                self.handle_existing_reward_claim(existed_reward_claim.clone()).await?;
+                existed_reward_claim
+            }
+            Err(_) => { 
+                self.create_new_reward_claim(&payload, resource_type, amount_in_smallest_unit.clone(), user_id).await?
+            }
         };
 
-        let reward_claim = self.reward_claim_repo.insert(db_manager.get_connection().await?.into(), new_reward_claim).await?;
         let tx_result_response = match coin.coin_type {
             CoinType::Native => {
                 self.process_native_transfer(payload.clone(), amount_in_smallest_unit.clone()).await
@@ -182,7 +226,8 @@ where
                 self.reward_claim_repo.update_status(
                     db_manager.get_connection().await?.into(),
                     reward_claim.id,
-                    RewardClaimStatus::TransactionFailed
+                    RewardClaimStatus::TransactionFailed,
+                    false
                 ).await?;
                 return Err(err);
             }
@@ -193,7 +238,7 @@ where
         } else {
             RewardClaimStatus::TransactionApproved
         };
-        let reward_claim = self.reward_claim_repo.update_status(db_manager.get_connection().await?.into(), reward_claim.id, reward_claim_status).await?;
+        let reward_claim = self.reward_claim_repo.update_status(db_manager.get_connection().await?.into(), reward_claim.id, reward_claim_status, false).await?;
 
         let new_reward_claim_detail = NewRewardClaimDetail {
             id: Uuid::new_v4(),
@@ -273,4 +318,3 @@ where
         ).await.map_err(Into::into)
     }
 }
-
