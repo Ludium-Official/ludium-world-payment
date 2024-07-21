@@ -32,7 +32,6 @@ impl Error {
             Error::BuildError(message) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, message.clone()),
         }
     }
-
 }
 
 pub trait PgError {
@@ -44,6 +43,7 @@ impl PgError for diesel::result::Error {
         match self {
             diesel::result::Error::DatabaseError(_, info) => Error::QueryError(info.message().to_string()),
             diesel::result::Error::NotFound => Error::QueryError("Record not found".to_string()),
+            diesel::result::Error::RollbackTransaction => Error::QueryError("Transaction rollback".to_string()),
             _ => Error::QueryError("Unknown query error".to_string()), 
         }
     }

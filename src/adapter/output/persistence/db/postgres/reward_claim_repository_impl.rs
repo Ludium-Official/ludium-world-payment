@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use axum::async_trait;
 use deadpool_diesel::postgres::Object;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, RewardClaim, RewardClaimStatus, ResourceType}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
+use crate::{adapter::output::persistence::db::schema::reward_claim_detail, domain::model::{reward_claim::{NewRewardClaim, ResourceType, RewardClaim, RewardClaimStatus, UpdateRewardClaimStatus}, reward_claim_detail::{NewRewardClaimDetail, RewardClaimDetail}}};
 use crate::port::output::reward_claim_repository::RewardClaimRepository;
 use super::{Error, Result, adapt_db_error, reward_claim};
 
@@ -35,6 +37,7 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
                 .filter(reward_claim::resource_id.eq(resource_id))
                 .filter(reward_claim::user_id.eq(user_id))
                 .select(RewardClaim::as_select())
+                .for_update()
                 .first::<RewardClaim>(conn)
         })
         .await?
@@ -52,24 +55,58 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
     }
 
     async fn list_all_by_user(&self, conn: Object, user_id: Uuid) -> Result<Vec<(RewardClaim, RewardClaimDetail)>> {
-        conn.interact(move |conn| {
+        let result = conn.interact(move |conn| {
             reward_claim::table
                 .filter(reward_claim::user_id.eq(user_id))
                 .inner_join(reward_claim_detail::table)
                 .select((RewardClaim::as_select(), RewardClaimDetail::as_select())) 
                 .load::<(RewardClaim, RewardClaimDetail)>(conn)
         })
-        .await?
-        .map_err(|e| Error::from(adapt_db_error(e)))
+        .await?;
+
+        match result {
+            Ok(claim_details) => {
+                let mut latest_claim_details: HashMap<Uuid, (RewardClaim, RewardClaimDetail)> = HashMap::new();
+                for (claim, detail) in claim_details {
+                    let entry = latest_claim_details.entry(claim.id).or_insert((claim.clone(), detail.clone()));
+                    if detail.created_date > entry.1.created_date {
+                        *entry = (claim, detail);
+                    }
+                }
+                Ok(latest_claim_details.into_iter().map(|(_, v)| v).collect())
+            },
+            Err(e) => Err(Error::from(adapt_db_error(e))),
+        }
     }
 
-    async fn update_status(&self, conn: Object, reward_claim_id: Uuid, status: RewardClaimStatus) -> Result<RewardClaim>{
+    async fn update_status(&self, conn: Object, reward_claim_id: Uuid, status: RewardClaimStatus, retryable: bool) -> Result<RewardClaim>{
         conn.interact(move |conn| {
-            diesel::update(reward_claim::table)
-                .filter(reward_claim::id.eq(reward_claim_id))
-                .set(reward_claim::reward_claim_status.eq(status))
-                .returning(RewardClaim::as_select()) 
-                .get_result::<RewardClaim>(conn)
+            conn.transaction(|conn| {
+                let target_claim = reward_claim::table
+                    .filter(reward_claim::id.eq(reward_claim_id))
+                    .for_update()
+                    .select(RewardClaim::as_select()) 
+                    .first::<RewardClaim>(conn)?;
+                
+                if retryable && target_claim.reward_claim_status == RewardClaimStatus::Ready {
+                    tracing::error!(
+                        "[Ready - update failed] Reward Claim Duplicate: Resource Id: {}, Resource Type: {}, User Id: {}",
+                        target_claim.resource_id, target_claim.resource_type, target_claim.user_id
+                    );
+                    return Err(diesel::result::Error::RollbackTransaction);
+                }
+
+                let changes = UpdateRewardClaimStatus {
+                    reward_claim_status: status,
+                    updated_date: chrono::Utc::now().naive_utc(),
+                };
+
+                diesel::update(reward_claim::table)
+                    .filter(reward_claim::id.eq(target_claim.id))
+                    .set(&changes)
+                    .returning(RewardClaim::as_select())
+                    .get_result::<RewardClaim>(conn)
+            })
         })
         .await?
         .map_err(|e| Error::from(adapt_db_error(e)))
@@ -230,7 +267,6 @@ mod tests {
         };
 
         let result = repo.insert_detail(db_manager.get_connection().await?, invalid_reward_claim_detail).await;
-        println!("{:?}", result);
         assert!(result.is_err());
 
         Ok(())
@@ -268,7 +304,7 @@ mod tests {
         let inserted_claim_1 = repo.insert(db_manager.get_connection().await?, new_reward_claim_1.clone()).await?;
         let inserted_claim_2 = repo.insert(db_manager.get_connection().await?, new_reward_claim_2.clone()).await?;
 
-        let new_reward_claim_detail_1 = NewRewardClaimDetail {
+        let new_reward_claim_detail_1_1 = NewRewardClaimDetail {
             id: Uuid::new_v4(),
             reward_claim_id: inserted_claim_1.id,
             transaction_hash: "test_hash_1".to_string(),
@@ -276,7 +312,29 @@ mod tests {
             sended_user_address: "sended_address_1".to_string(),
         };
 
-        let new_reward_claim_detail_2 = NewRewardClaimDetail {
+        let new_reward_claim_detail_1_2 = NewRewardClaimDetail {
+            id: Uuid::new_v4(),
+            reward_claim_id: inserted_claim_1.id,
+            transaction_hash: "test_hash_1_2".to_string(),
+            sended_user_id: Uuid::new_v4(),
+            sended_user_address: "sended_address_1".to_string(),
+        };
+
+        let new_reward_claim_detail_2_1 = NewRewardClaimDetail {
+            id: Uuid::new_v4(),
+            reward_claim_id: inserted_claim_2.id,
+            transaction_hash: "test_hash_2".to_string(),
+            sended_user_id: Uuid::new_v4(),
+            sended_user_address: "sended_address_2".to_string(),
+        };
+        let new_reward_claim_detail_2_2 = NewRewardClaimDetail {
+            id: Uuid::new_v4(),
+            reward_claim_id: inserted_claim_2.id,
+            transaction_hash: "test_hash_2".to_string(),
+            sended_user_id: Uuid::new_v4(),
+            sended_user_address: "sended_address_2".to_string(),
+        };
+        let new_reward_claim_detail_2_3 = NewRewardClaimDetail {
             id: Uuid::new_v4(),
             reward_claim_id: inserted_claim_2.id,
             transaction_hash: "test_hash_2".to_string(),
@@ -284,11 +342,24 @@ mod tests {
             sended_user_address: "sended_address_2".to_string(),
         };
 
-        repo.insert_detail(db_manager.get_connection().await?, new_reward_claim_detail_1.clone()).await?;
-        repo.insert_detail(db_manager.get_connection().await?, new_reward_claim_detail_2.clone()).await?;
+        repo.insert_detail(db_manager.get_connection().await?, new_reward_claim_detail_1_1.clone()).await?;
+        repo.insert_detail(db_manager.get_connection().await?, new_reward_claim_detail_1_2.clone()).await?;
+        repo.insert_detail(db_manager.get_connection().await?, new_reward_claim_detail_2_1.clone()).await?;
+        repo.insert_detail(db_manager.get_connection().await?, new_reward_claim_detail_2_2.clone()).await?;
+        repo.insert_detail(db_manager.get_connection().await?, new_reward_claim_detail_2_3.clone()).await?;
 
         let claims = repo.list_all_by_user(db_manager.get_connection().await?, user_id).await?;
         assert_eq!(claims.len(), 2);
+
+        claims.iter().for_each(|(claim, detail)| {
+            if claim.resource_type == ResourceType::Mission {
+                assert_eq!(claim.id, inserted_claim_1.id);
+                assert_eq!(detail.transaction_hash, new_reward_claim_detail_1_2.transaction_hash);
+            } else {
+                assert_eq!(claim.id, inserted_claim_2.id);
+                assert_eq!(detail.transaction_hash, new_reward_claim_detail_2_3.transaction_hash);
+            }
+        });
 
         Ok(())
     }
@@ -311,9 +382,10 @@ mod tests {
         };
 
         let inserted_claim = repo.insert(db_manager.get_connection().await?, new_reward_claim.clone()).await?;
-        let updated_claim = repo.update_status(db_manager.get_connection().await?, inserted_claim.id, RewardClaimStatus::TransactionApproved).await?;
+        let updated_claim = repo.update_status(db_manager.get_connection().await?, inserted_claim.id, RewardClaimStatus::TransactionApproved, false).await?;
         
         assert_eq!(updated_claim.reward_claim_status, RewardClaimStatus::TransactionApproved);
+        assert_ne!(updated_claim.updated_date, inserted_claim.updated_date);
 
         Ok(())
     }
