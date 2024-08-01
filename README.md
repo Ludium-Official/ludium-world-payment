@@ -69,4 +69,3 @@ if you want to set a new db table. you have to print db schema file
 # diesel print-schema --database-url={db_url} > {print_path}
 diesel print-schema --database-url=postgres://postgres:postgres@localhost:5432/temp_local > src/adapter/output/persistence/db/schema.rs
 ```
-

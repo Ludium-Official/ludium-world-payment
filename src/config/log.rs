@@ -20,17 +20,23 @@ use uuid::Uuid;
 use crate::adapter::input::ctx::Ctx;
 use crate::adapter::input::error::{Result, Error};
 
-
-pub fn init_tracing() {
+pub fn init_tracing(run_mode: &str) {
     let tracing_layer = tracing_subscriber::fmt::layer();
 
+    let log_level = match run_mode {
+        "local" => Level::DEBUG,
+        "development" => Level::DEBUG,
+        "production" => Level::INFO,
+        _ => Level::DEBUG, // Default level
+    };
+
     let filter = filter::Targets::new()
-		.with_target("diesel", tracing::Level::DEBUG) 
-        .with_target("tower_http::trace::on_response", Level::DEBUG)
-        .with_target("tower_http::trace::on_request", Level::DEBUG)
-        .with_target("tower_http::trace::make_span", Level::DEBUG)
-		.with_target("near_jsonrpc_client", Level::INFO)
-        .with_default(Level::DEBUG);
+        .with_target("diesel", log_level)
+        .with_target("tower_http::trace::on_response", log_level)
+        .with_target("tower_http::trace::on_request", log_level)
+        .with_target("tower_http::trace::make_span", log_level)
+        .with_target("near_jsonrpc_client", Level::INFO)
+        .with_default(log_level);
 
     tracing_subscriber::registry()
         .with(tracing_layer)

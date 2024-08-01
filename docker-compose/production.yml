@@ -1,0 +1,15 @@
+services:
+  app: 
+    build: 
+      context: ..
+      dockerfile: docker-compose/Dockerfile
+    env_file:
+      - ../.env.production
+    environment:
+      - PAYMENT_RUN_MODE=production
+    ports:
+      - 8080:8080
+    volumes:
+      - ../production/config.toml:/payment-app/config.toml
+      - ../production/account_keys:/payment-app/account_keys
+      - ../production/self_signed_certs:/payment-app/self_signed_certs

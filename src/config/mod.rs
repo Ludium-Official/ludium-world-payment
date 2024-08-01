@@ -22,7 +22,7 @@ struct DatabaseConfig {
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    run_mode: String,
+    pub run_mode: String,
     server: ServerConfig,
     db: DatabaseConfig,
     signer: KeyRotatingSignerWrapper,

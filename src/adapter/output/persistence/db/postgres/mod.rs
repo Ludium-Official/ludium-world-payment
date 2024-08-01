@@ -39,6 +39,6 @@ impl PostgresDbManager {
 #[async_trait]
 impl DbManager for PostgresDbManager {
     async fn get_connection(&self) -> Result<Object> {
-        self.db_pool.get().await.map_err(|e| Error::from(adapt_db_error(e))) // Object<Manager<PgConnection>>
+        self.db_pool.get().await.map_err(|e| Error::from(adapt_db_error(e))) 
     }
 }
