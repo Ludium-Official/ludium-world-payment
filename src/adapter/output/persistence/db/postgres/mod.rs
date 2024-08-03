@@ -23,7 +23,7 @@ impl PostgresDbManager {
             deadpool_diesel::Runtime::Tokio1,
         );
         let pool: Pool = Pool::builder(manager)
-            .max_size(16)   
+            .max_size(10)   
             .build()
             .map_err(|e| {
                 tracing::error!("Failed to build pool: {:?}", e);
