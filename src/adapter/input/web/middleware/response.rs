@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{http::{Method, Uri}, response::{IntoResponse, Response}, Json};
+use axum::{body::{Body, Bytes}, http::{Method, Uri}, response::{IntoResponse, Response}, Json};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -20,8 +20,8 @@ pub async fn mapper(
 ) -> Response {
 	let uuid = Uuid::new_v4();
 
-	let service_error = res.extensions().get::<Arc<Error>>().map(Arc::as_ref);
-	let client_status_error = service_error.map(|se| se.client_status_and_error());
+	let service_error = res.extensions().get::<Arc<Error>>().map(Arc::as_ref).cloned();
+	let client_status_error = service_error.clone().map(|se| se.client_status_and_error());
 
 	let error_response =
 		client_status_error
@@ -37,9 +37,22 @@ pub async fn mapper(
 
 	let client_error_message = client_status_error.unzip().1;
 
-	let _ =
-		log_request(uuid, req_method, uri, ctx, service_error, client_error_message.clone().as_ref()).await;
+	let (parts, body) = res.into_parts();
+	let res_body_bytes = match axum::body::to_bytes(body, usize::MAX).await {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            tracing::info!("Failed to read body: {:?}", e);
+            Bytes::new()
+        }
+    };
+	let res_body_str = String::from_utf8_lossy(&res_body_bytes).to_string();
 
-	error_response.unwrap_or(res)
+	let _ =
+		log_request(uuid, req_method, uri, ctx, 
+			service_error.as_ref(), 
+			client_error_message.clone().as_ref(),
+			Some(&res_body_str)).await;
+
+	error_response.unwrap_or_else(|| Response::from_parts(parts, Body::from(res_body_bytes)))
 }
 

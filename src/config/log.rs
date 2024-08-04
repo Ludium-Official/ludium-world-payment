@@ -50,7 +50,7 @@ pub fn request_logging_middleware() -> TraceLayer<SharedClassifier<ServerErrorsA
             tracing::info_span!("request", method = %request.method(), uri = %request.uri())
         })
         .on_request(|request: &Request<Body>, _: &tracing::Span| {
-            tracing::info!("Starting request to {}", request.uri());
+            tracing::info!("Starting request to [{}] {}", request.method(), request.uri());
         })
         .on_response(|response: &Response, latency: Duration, _: &tracing::Span| {
             tracing::info!("Response status: {}, took: {:?}", response.status(), latency);
@@ -83,6 +83,7 @@ pub async fn log_request(
 	ctx: Option<Ctx>,
 	service_error: Option<&Error>,
 	client_error_message: Option<&String>,
+	res_body_str: Option<&String>
 ) -> Result<()> {
 	let timestamp = SystemTime::now()
 		.duration_since(UNIX_EPOCH)
@@ -108,7 +109,11 @@ pub async fn log_request(
 		error_data,
 	};
 
-	tracing::debug!("{}", json!(log_line));
+	tracing::info!("{}", json!(log_line));
+
+	if let Some(body) = &res_body_str {
+        tracing::info!("Response Body: {}", body);
+    }
 
 	Ok(())
 }
