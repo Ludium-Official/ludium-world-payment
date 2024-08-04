@@ -44,8 +44,6 @@ impl NetworkRepository for PostgresNetworkRepository {
     }
 }
 
-// region: --- network repository tests 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -106,4 +104,3 @@ mod tests {
         Ok(())
     }
 }
-// endregion: --- network repository tests 

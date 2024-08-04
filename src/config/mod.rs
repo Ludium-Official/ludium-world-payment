@@ -68,7 +68,10 @@ async fn init_config() -> Config {
     let run_mode = env::var("PAYMENT_RUN_MODE").unwrap_or_else(|_| "local".to_string());
     let env_file = format!(".env.{}", run_mode);
     dotenvy::from_filename(&env_file).ok();
-    tracing::info!("RUN_MODE: {}", run_mode);
+
+    log::init_tracing(&run_mode);
+    
+	tracing::info!("RUN MODE: {}", run_mode);
 
     let server_config = ServerConfig {
         host: env::var("HOST").unwrap_or_else(|_| String::from("127.0.0.1")),

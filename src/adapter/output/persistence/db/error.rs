@@ -40,6 +40,7 @@ pub trait PgError {
 
 impl PgError for diesel::result::Error {
     fn as_db_error(&self) -> Error {
+        tracing::debug!("diesel debug: {:?}", self);
         match self {
             diesel::result::Error::DatabaseError(_, info) => Error::QueryError(info.message().to_string()),
             diesel::result::Error::NotFound => Error::QueryError("Record not found".to_string()),
@@ -67,7 +68,6 @@ impl PgError for deadpool_diesel::postgres::BuildError {
     }
 }
 
-// --- region: From trait implementations
 impl From<deadpool_diesel::PoolError> for Error {
     fn from(error: deadpool_diesel::PoolError) -> Self {
         error.as_db_error()
@@ -85,4 +85,3 @@ impl From<deadpool_diesel::postgres::BuildError> for Error {
         error.as_db_error()
     }
 }
-// --- endregion: From trait implementations

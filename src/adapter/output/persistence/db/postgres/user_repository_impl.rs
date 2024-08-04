@@ -42,7 +42,6 @@ impl UserRepository for PostgresUserRepository {
 }
 
 
-// region: --- user repository tests
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,5 +83,3 @@ mod tests {
         Ok(())
     }
 }
-
-// endregion: --- user repository tests

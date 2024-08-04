@@ -25,14 +25,13 @@ use crate::{
         routes_static, 
         web::{self, middleware::{auth, response}, routes_hello}
     }, 
-    config::{config, log::{self}},
+    config::config
 };
 pub use self::adapter::input::error::Result;
 
 #[tokio::main]
 async fn main() -> Result<()>{    
     let config = config().await;
-    log::init_tracing(&config.run_mode);
     let app_state = Arc::new(AppState::new(&config).await?);
     
     let mut routes_all = Router::new()

@@ -114,8 +114,6 @@ impl RewardClaimRepository for PostgresRewardClaimRepository {
 }
 
 
-// region: --- reward claim repository tests
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -390,5 +388,3 @@ mod tests {
         Ok(())
     }
 }
-
-// endregion: --- reward claim repository tests

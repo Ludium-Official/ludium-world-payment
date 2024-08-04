@@ -48,8 +48,6 @@ impl CoinRepository for PostgresCoinRepository {
 
 }
 
-// region: --- coin repository tests 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,5 +112,3 @@ mod tests {
         Ok(())
     }
 }
-
-// endregion: --- coin repository tests

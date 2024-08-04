@@ -1,5 +1,7 @@
+
 use axum::async_trait;
 use deadpool_diesel::postgres::{Manager, Object, Pool};
+use deadpool_diesel::Runtime;
 use crate::port::output::DbManager;
 use super::error::{Result, Error, adapt_db_error};
 use super::schema::{tb_ldm_usr, coin, network, coin_network, reward_claim, mission_submit, detailed_posting};
@@ -20,10 +22,12 @@ impl PostgresDbManager {
     pub async fn new(database_url: &str) -> Result<Self> {
         let manager = Manager::new(
             database_url.to_string(),
-            deadpool_diesel::Runtime::Tokio1,
+            Runtime::Tokio1,
         );
+        
         let pool: Pool = Pool::builder(manager)
-            .max_size(10)   
+            .max_size(16)
+            .runtime(Runtime::Tokio1)
             .build()
             .map_err(|e| {
                 tracing::error!("Failed to build pool: {:?}", e);
