@@ -112,7 +112,9 @@ pub async fn log_request(
 	tracing::info!("{}", json!(log_line));
 
 	if let Some(body) = &res_body_str {
-        tracing::info!("Response Body: {}", body);
+		if body.len() > 0 {
+			tracing::info!("Response Body: {}", body);
+		}
     }
 
 	Ok(())
