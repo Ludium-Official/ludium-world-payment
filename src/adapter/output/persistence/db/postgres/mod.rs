@@ -26,7 +26,7 @@ impl PostgresDbManager {
         );
         
         let pool: Pool = Pool::builder(manager)
-            .max_size(16)
+            .max_size(10)
             .runtime(Runtime::Tokio1)
             .build()
             .map_err(|e| {
