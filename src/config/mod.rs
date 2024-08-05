@@ -17,6 +17,7 @@ struct ServerConfig {
 #[derive(Debug, Clone)]
 struct DatabaseConfig {
     url: String,
+    connection_size: usize,
 }
 
 
@@ -33,6 +34,10 @@ pub struct Config {
 impl Config {
     pub fn db_url(&self) -> &str {
         &self.db.url
+    }
+
+    pub fn db_connection_size(&self) -> usize {
+        self.db.connection_size
     }
 
     pub fn server_host(&self) -> &str {
@@ -88,8 +93,13 @@ async fn init_config() -> Config {
         env::var("POSTGRES_DB").expect("POSTGRES_DB must be set")
     };
 
+    let pg_connection_size = env::var("POSTGRES_CONNECTION_SIZE")
+        .unwrap_or_else(|_| "5".to_string())
+        .parse::<usize>()
+        .unwrap();
     let database_config = DatabaseConfig {
-        url: format!("{}/{}", db_url, databse_name)
+        url: format!("{}/{}", db_url, databse_name),
+        connection_size: pg_connection_size,
     };
 
     let near_network_config = NearNetworkConfig::init();

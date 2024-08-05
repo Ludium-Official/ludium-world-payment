@@ -114,7 +114,7 @@ async fn create_random_user() -> Result<Arc<httpc_test::Client>> {
     let client = reqwest::Client::builder()
         .default_headers(headers);
     let hc: Arc<httpc_test::Client> = Arc::new(httpc_test::new_client_with_reqwest(
-        "http://localhost:8080",
+        "http://localhost:8090",
         client
     )?);
 

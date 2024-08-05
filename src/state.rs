@@ -29,7 +29,11 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new(config: &Config) -> Result<Self> {
-        let db_manager = Arc::new(PostgresDbManager::new(&config.db_url()).await?);
+        let db_manager = Arc::new(
+            PostgresDbManager::new(
+                &config.db_url(), 
+                config.db_connection_size()
+            ).await?);
 
         {
             let _ = db_manager.get_connection().await?;

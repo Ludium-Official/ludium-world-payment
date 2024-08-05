@@ -25,7 +25,7 @@ pub async fn init_test() -> PostgresDbManager {
 	}
 
     DB_MANAGER.get_or_init(|| async {
-        PostgresDbManager::new(&config.db_url()).await.unwrap()
+        PostgresDbManager::new(&config.db_url(), config.db_connection_size()).await.unwrap()
     }).await;
 
     DB_MANAGER.get().unwrap().clone()

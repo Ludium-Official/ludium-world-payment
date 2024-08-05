@@ -19,14 +19,14 @@ pub struct PostgresDbManager {
 }
 
 impl PostgresDbManager {
-    pub async fn new(database_url: &str) -> Result<Self> {
+    pub async fn new(database_url: &str, connection_size: usize) -> Result<Self> {
         let manager = Manager::new(
             database_url.to_string(),
             Runtime::Tokio1,
         );
         
         let pool: Pool = Pool::builder(manager)
-            .max_size(10)
+            .max_size(connection_size)
             .runtime(Runtime::Tokio1)
             .build()
             .map_err(|e| {
