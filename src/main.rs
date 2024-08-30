@@ -68,7 +68,7 @@ async fn main() -> Result<()>{
     let addr = SocketAddr::from((ip_addr, config.server_port()));
     tracing::info!("listening on {}", addr);
 
-    if config.is_local() {
+    if config.is_local() || !config.server_use_tls() {
         axum_server::bind(addr)
         .serve(routes_all.into_make_service())
         .await
