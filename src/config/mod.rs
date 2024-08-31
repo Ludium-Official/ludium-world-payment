@@ -12,6 +12,7 @@ use self::near::{KeyRotatingSignerWrapper, NearNetworkConfig};
 struct ServerConfig {
     host: String,
     port: u16,
+    use_tls: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -46,6 +47,10 @@ impl Config {
 
     pub fn server_port(&self) -> u16 {
         self.server.port
+    }
+
+    pub fn server_use_tls(&self) -> bool {
+        self.server.use_tls
     }
 
     pub fn signer(&self) -> KeyRotatingSignerWrapper {
@@ -84,6 +89,7 @@ async fn init_config() -> Config {
             .unwrap_or_else(|_| String::from("8090"))
             .parse::<u16>()
             .unwrap(),
+        use_tls: env::var("USE_TLS").unwrap_or_else(|_| "false".to_string()) == "true",
     };
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
